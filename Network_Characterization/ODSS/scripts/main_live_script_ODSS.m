@@ -1,6 +1,7 @@
-addpath('C:\Dropbox (MIT)\SMART_DS\matlab\metrics\ODSS\scripts');
-%addpath('C:\Users\V\Dropbox (MIT)\feeder_metrics\functions\ODSS\major_MLX');
-%%% THIS IS THE OLD STRUCTURE 
+clc
+clearvars
+fclose all;
+
 %% The main functions, written in script format (live script)
 
 %interacts with engine to create circuit data structure
