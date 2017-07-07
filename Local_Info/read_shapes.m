@@ -146,7 +146,7 @@ for i=1:nMapUsers
 end
 mapUsers.z=zeros(nMapUsers,1);
 
-%% write files
+%% write files and save the workspace
 users.x=round(users.x,1);
 users.y=round(users.y,1);
 tUsers=table(users.x,users.y,users.z,users.id,users.v,users.p,users.q,users.nPhases);
@@ -157,6 +157,7 @@ mapUsers.y=round(mapUsers.y,1);
 tMapUsers=table(mapUsers.x,mapUsers.y,mapUsers.z,mapUsers.id);
 writetable(tMapUsers,fullfile(dataFolder,'PointStreetMap.txt'),'Delimiter',';','writeVariableNames',false);
 
+save(dataFolder,'WorkspaceLocalInfo')
 %% Show roads and buildings
 % close all
 % figure(1)
