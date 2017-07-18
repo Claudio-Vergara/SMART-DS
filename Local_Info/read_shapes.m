@@ -1,15 +1,16 @@
 clc
 clearvars
 dbstop if error
+tic;
 addpath(genpath(fullfile('C:\SMART-DS')));
-dataFolder='C:\Dropbox (MIT)\SMART_DS\data\cities\medium_CA';
+dataFolder='C:\Dropbox (MIT)\SMART_DS\data\cities\Mineapolis_MN';
 d=10; % distance between the auxiliary consumers for the street map
-pf=0.8; % inductive power factor of all the loads
+pf=0.95; % inductive power factor of all the loads
 LV=0.416;
 MV=11;
 
 %% Load roads data and convert to meters
-roads_deg=shaperead(fullfile(dataFolder,'demo2r.shp'));
+roads_deg=shaperead(fullfile(dataFolder,'Roads.shp'));
 roadSegs.x=[];
 roadSegs.y=[];
 nRoads=length(roads_deg);
@@ -54,7 +55,7 @@ nMapUsers=length(mapUsers.x);
 
 %% Load buildings data, convert to meters and calculate the shape centroids
 % I'm using the centroid of the bounding box for now.
-buildings_deg=shaperead(fullfile(dataFolder,'demo2b.shp'));
+buildings_deg=shaperead(fullfile(dataFolder,'Buildings.shp'));
 nBuildings=length(buildings_deg);
 centerLat=nan(nBuildings,1);
 centerLon=nan(nBuildings,1);
@@ -109,7 +110,7 @@ for i=1:nBuildings
     
 end
 
-[userCentroid.x,userCentroid.y,~]=deg2utm(centerLat,centerLon);
+[users.Centroid.x,users.Centroid.y,~]=deg2utm(centerLat,centerLon);
 
 %% Find the best supply point
 % I'm considering the vertex of the building's polygon which is closest to
@@ -117,14 +118,19 @@ end
 
 %% Compile other fields
 
+users.area=buildingArea;
+users.height=[buildings_deg.Height1]'*0.3; % convert feet to meters
+%users.height=[buildings_deg.ELEV_GL]'*0.3; % convert feet to meters
+users.levels=ceil(users.height/2.5); % assuming 2.5 m per level
+users.totalArea=users.area.*users.levels;
 users.z=zeros(nBuildings,1);
-users.p=round(50*buildingArea/1000,2); % peak power in kW
+users.p=round(0.07*users.totalArea,2); % peak power in kW
 users.q=users.p*tan(acos(pf));
 users.v=LV*ones(nBuildings,1); % default to LV
 users.v(users.p>50)=MV; % if the load is greater than 50 kW peak, move to MV
 users.nPhases=ones(nBuildings,1); % default to single phase
-users.nPhases(users.v==0.4 & users.p>20)=3; % Move LV users of more than 20 kW peak to 3 phase
-users.nPhases(users.p>200)=3; % Move all users of more than 200 kW peak to 3 phase
+users.nPhases(users.v==LV & users.p>20)=3; % Move LV users of more than 20 kW peak to 3 phase
+users.nPhases(users.p>200)=3; % Move all users of more than 200 kW peak to 3 phase MV
 
 %% write user codes
 nLV=0;
@@ -157,7 +163,71 @@ mapUsers.y=round(mapUsers.y,1);
 tMapUsers=table(mapUsers.x,mapUsers.y,mapUsers.z,mapUsers.id);
 writetable(tMapUsers,fullfile(dataFolder,'PointStreetMap.txt'),'Delimiter',';','writeVariableNames',false);
 
-save(dataFolder,'WorkspaceLocalInfo')
+save(fullfile(dataFolder,'WorkspaceLocalInfo.mat'));
+
+%%
+toc;
+%% summary info
+figure(1)
+hist(users.p,10000);
+xlabel('Peak load (kW)')
+ylabel('Number of buildings')
+
+%% create heatmap
+
+mapHeight=400; %cells
+mapWidth=800;
+hMin=min(users.y)-1;
+hMax=max(users.y)-1;
+wMin=min(users.x)-1;
+wMax=max(users.x)-1;
+
+hStep=(hMax-hMin)/mapHeight;
+wStep=(wMax-wMin)/mapWidth;
+
+cellArea=hStep*wStep;
+
+M=zeros(mapHeight,mapWidth);
+
+for i=1:mapHeight
+    for j=1:mapWidth
+        if j==1, xMin=wMin; else, xMin=(j-1)*wStep+wMin; end
+        xMax=j*wStep+wMin;
+        if i==1, yMin=hMin; else, yMin=(i-1)*hStep+hMin; end
+        yMax=i*hStep+hMin;        
+        M(i,j)=sum(users.p(users.x<xMax & users.x>xMin & users.y<yMax & users.y>yMin));
+    end
+end
+
+M=1/cellArea*M;
+
+
+%%
+%H = fspecial('average',[10,10]);
+
+H = fspecial('gaussian',[20,20],10);
+
+fM=imfilter(M,H);
+
+figure(2)
+imagesc(flipud(M));
+
+figure(3)
+imagesc(flipud(fM));
+
+figure(4)
+surf(fM,'EdgeColor','none')
+colorbar
+
+figure(5)
+scatter(users.x(users.v==LV),users.y(users.v==LV),2,'red','filled')
+hold on
+scatter(users.x(users.v==MV),users.y(users.v==MV),2,'blue','filled')
+hold off
+xlabel('UTM Easting (m)')
+ylabel('UTM Northing (m)')
+legend('LV','MV','Location','SE');
+
 %% Show roads and buildings
 % close all
 % figure(1)
