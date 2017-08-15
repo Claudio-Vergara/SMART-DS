@@ -3,9 +3,11 @@ clearvars
 dbstop if error
 tic;
 addpath(genpath(fullfile('C:\SMART-DS')));
-dataFolder='C:\Dropbox (MIT)\SMART_DS\data\cities\Mineapolis_MN';
+dataFolder='C:\Dropbox (MIT)\SMART_DS\data\cities\Santa_Fe_NM';
 d=10; % distance between the auxiliary consumers for the street map
 pf=0.95; % inductive power factor of all the loads
+lf=[0.25 0.4]; % load factor [LV MV]
+cf=[0.4 0.8]; % peak-coincidence factor [LV MV]
 LV=0.416;
 MV=11;
 
@@ -118,7 +120,7 @@ end
 
 %% Compile other fields
 
-users.area=buildingArea;
+users.area=round(buildingArea);
 users.height=[buildings_deg.Height1]'*0.3; % convert feet to meters
 %users.height=[buildings_deg.ELEV_GL]'*0.3; % convert feet to meters
 users.levels=ceil(users.height/2.5); % assuming 2.5 m per level
@@ -136,13 +138,22 @@ users.nPhases(users.p>200)=3; % Move all users of more than 200 kW peak to 3 pha
 nLV=0;
 nMV=0;
 users.id={};
+users.e=zeros(nBuildings,1);
+users.cp=zeros(nBuildings,1);
+users.cq=zeros(nBuildings,1);
 for i=1:nBuildings
     if users.v(i)==LV
         nLV=nLV+1;
     users.id{i,1}=['CLV' num2str(nLV)];
+    users.e(i)=round(users.p(i)*lf(1)*8760);  % yearly energy in kWh
+    users.cp(i)=round(users.p(i)*cf(1),2); % peak-coincident power in kW
+    users.cq(i)=round(users.q(i)*cf(1),2); % peak-coincident power in kW
     elseif users.v(i)==MV
         nMV=nMV+1;
         users.id{i}=['CMV' num2str(nMV)];
+        users.e(i)=round(users.p(i)*lf(2)*8760); % yearly energy in kWh
+        users.cp(i)=round(users.p(i)*cf(2),2); % peak-coincident power in kW
+        users.cq(i)=round(users.q(i)*cf(2),2); % peak-coincident power in kW
     end        
 end
 
@@ -157,6 +168,10 @@ users.x=round(users.x,1);
 users.y=round(users.y,1);
 tUsers=table(users.x,users.y,users.z,users.id,users.v,users.p,users.q,users.nPhases);
 writetable(tUsers,fullfile(dataFolder,'customers.txt'),'Delimiter',';','writeVariableNames',false);
+
+tUsersExtended=table(users.x,users.y,users.z,users.id,users.v,users.p,...
+    users.q,users.nPhases,users.area,users.levels,users.e,users.cp,users.cq);
+writetable(tUsersExtended,fullfile(dataFolder,'customers_extended.txt'),'Delimiter',';','writeVariableNames',false);
 
 mapUsers.x=round(mapUsers.x,1);
 mapUsers.y=round(mapUsers.y,1);
@@ -200,7 +215,6 @@ for i=1:mapHeight
 end
 
 M=1/cellArea*M;
-
 
 %%
 %H = fspecial('average',[10,10]);
