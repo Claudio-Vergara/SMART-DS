@@ -3,13 +3,15 @@ clearvars
 dbstop if error
 tic;
 addpath(genpath(fullfile('C:\SMART-DS')));
-dataFolder='C:\Dropbox (MIT)\SMART_DS\data\cities\Santa_Fe_NM';
+dataFolder='D:\Claudio\Dropbox (MIT)\SMART_DS\data\cities\Santa_Fe_NM';
 d=10; % distance between the auxiliary consumers for the street map
 pf=0.95; % inductive power factor of all the loads
 lf=[0.25 0.4]; % load factor [LV MV]
 cf=[0.4 0.8]; % peak-coincidence factor [LV MV]
 LV=0.416;
 MV=11;
+areaPerUser=100; %m^2
+peakPerArea=0.07; % kW/m^2;
 
 %% Load roads data and convert to meters
 roads_deg=shaperead(fullfile(dataFolder,'Roads.shp'));
@@ -125,8 +127,9 @@ users.height=[buildings_deg.Height1]'*0.3; % convert feet to meters
 %users.height=[buildings_deg.ELEV_GL]'*0.3; % convert feet to meters
 users.levels=ceil(users.height/2.5); % assuming 2.5 m per level
 users.totalArea=users.area.*users.levels;
-users.z=zeros(nBuildings,1);
-users.p=round(0.07*users.totalArea,2); % peak power in kW
+users.nUsersEq=max(1,round(users.totalArea/areaPerUser,0));
+users.selfCF=0.5*(1+5./(2*users.nUsersEq+3)); %Electric Power distribution Handbook, Tom Short, Second Edition (2014) 
+users.p=round(peakPerArea*users.totalArea.*users.selfCF,2); % peak power in kW
 users.q=users.p*tan(acos(pf));
 users.v=LV*ones(nBuildings,1); % default to LV
 users.v(users.p>50)=MV; % if the load is greater than 50 kW peak, move to MV
