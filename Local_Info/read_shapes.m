@@ -3,7 +3,7 @@ clearvars
 dbstop if error
 tic;
 addpath(genpath(fullfile('C:\SMART-DS')));
-dataFolder='D:\Claudio\Dropbox (MIT)\SMART_DS\data\cities\Santa_Fe_NM';
+dataFolder='C:\Dropbox (MIT)\SMART_DS\data\cities\Santa_Fe_NM';
 d=10; % distance between the auxiliary consumers for the street map
 pf=0.95; % inductive power factor of all the loads
 lf=[0.25 0.4]; % load factor [LV MV]
@@ -220,23 +220,19 @@ end
 M=1/cellArea*M;
 
 %%
-%H = fspecial('average',[10,10]);
-
 H = fspecial('gaussian',[20,20],10);
 
 fM=imfilter(M,H);
 
 figure(2)
-imagesc(flipud(M));
+imagesc(1000*flipud(fM)); % w/m^2
+%surf(fM,'EdgeColor','none')
+CB=colorbar;
+title(CB,'Power density in W/m^2');
+axis equal
 
+%%
 figure(3)
-imagesc(flipud(fM));
-
-figure(4)
-surf(fM,'EdgeColor','none')
-colorbar
-
-figure(5)
 scatter(users.x(users.v==LV),users.y(users.v==LV),2,'red','filled')
 hold on
 scatter(users.x(users.v==MV),users.y(users.v==MV),2,'blue','filled')
@@ -244,6 +240,7 @@ hold off
 xlabel('UTM Easting (m)')
 ylabel('UTM Northing (m)')
 legend('LV','MV','Location','SE');
+axis equal
 
 %% Show roads and buildings
 % close all
