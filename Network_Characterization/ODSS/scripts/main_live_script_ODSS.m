@@ -1,9 +1,8 @@
-clc
-clearvars
-fclose all;
-
+addpath('C:\Users\athakall\Desktop\FEEDER_CODES\SMART-DS-master\Network_Characterization\ODSS\scripts');
+%addpath('C:\Users\V\Dropbox (MIT)\feeder_metrics\functions\ODSS\major_MLX');
+%%% THIS IS THE OLD STRUCTURE 
 %% The main functions, written in script format (live script)
-
+ 
 %interacts with engine to create circuit data structure
 run_case1_MLX;
 
@@ -28,5 +27,13 @@ agg_metrics_shared_ODSS_MLX;
 %saves summary statistics into an excel sheet
 table_contents_ODSS_MLX;
 
+%segregates and calculates feeder level metrics
+Feeder_Level_Metrics;
+
+%creates separate folders for each attributes and files
+Folder_Create;
+
+%creates feederwise aggregate metrics
+Format_Aggregate;
 
 
