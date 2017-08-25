@@ -1,6 +1,6 @@
 function [coord, tuples] = plot_aMatrix_ODSS(file, a_matrix, asym_matrix,...
     bus_names, summary_lines_table, summary_nodes_table, nodes_array)
-
+global FinalPath
 %% Find and remove a unused buses. These are buses that are not connected to any other bus in the network. 
 %% Plot aMatrix
     sumA = sum(a_matrix);
@@ -151,6 +151,22 @@ tuples.node1 = node1_final;
 tuples.node2 = node2_final;
 tuples.edges = edges;
 tuples.edge_type = edge_type;
+
+%% coordinates for lines
+
+Lentup=length(tuples.node1);
+    for kk=1:Lentup
+    idxn1=strcmp(tuples.node1{kk},coord.name);
+    idx1=find(idxn1~=0);
+    idxn2=strcmp(tuples.node2{kk},coord.name);
+    idx2=find(idxn2~=0);
+    tuples.node1_x(kk)=coord.x(idx1(1));
+    tuples.node1_y(kk)=coord.y(idx1(1));
+    tuples.node2_x(kk)=coord.x(idx2(1));
+    tuples.node2_y(kk)=coord.y(idx2(1));
+    end
+
+
     
 %% Create Plot
 figure;
@@ -264,4 +280,5 @@ hg_array(count) = hg;
 legend(hg_array);
 
 saveas(gcf, fullfile(file.CSVexport,'feeder.jpeg'));
+%saveas(gcf, fullfile(char(FinalPath{8,2}{1}),'feeder.jpeg'));
 end 

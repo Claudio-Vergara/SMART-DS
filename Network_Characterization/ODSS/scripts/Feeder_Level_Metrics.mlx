@@ -1,0 +1,12 @@
+set_up1_MLX;
+load(fullfile(saveWorkspace, 'circuit.mat'));
+load(fullfile(saveWorkspace, 'summary_lines_table.mat'));
+
+[a_matrix_non, a_matrix, bus_names, asym_matrix] =...
+    make_aMatrix_ODSS(file, circuit, summary_lines_table); % change to sparse matrixes for memory efficiency
+variables = {'a_matrix_non', 'a_matrix', 'bus_names', 'asym_matrix'};
+for iV = 1:length(variables)
+    saveMat = fullfile(saveWorkspace, [variables{iV} '.mat']);
+    save(saveMat, variables{iV});
+end
+disp('Created adj mat'); 

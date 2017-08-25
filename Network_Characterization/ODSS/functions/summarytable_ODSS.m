@@ -71,7 +71,7 @@ function [summary_nodes_table, summary_lines_table, inputsTable] =...
 %             col = max(find(abs(terminalV.part1_in(iRow,:)) > 0)); %just find one
             col = max(abs(terminalV.part1_in(iRow,:)) > 0); %just find one
             
-            if isempty(col)
+            if isempty(col) || col == 0
                 nominalV_array(iRow,1) = 0;
             else
                 nominalV_array(iRow,1) = terminalV.part1_in(iRow,col)/1000; 
@@ -198,7 +198,6 @@ secondary_V(xfm_type_rows) = nominalV_array(xfm_type_rows);
     summ_struct.current_in_B_im = [i_im_B; zeros_bus];
     summ_struct.current_in_C_real = [i_re_C; zeros_bus];
     summ_struct.current_in_C_im = [i_im_C; zeros_bus];    
-
     summ_struct.voltage_in_A_mag = [terminalV.part1_in(:,1); zeros_bus];
     summ_struct.voltage_in_A_deg = [terminalV.part2_in(:,1); zeros_bus];
     summ_struct.voltage_in_B_mag = [terminalV.part1_in(:,2); zeros_bus];
@@ -207,6 +206,7 @@ secondary_V(xfm_type_rows) = nominalV_array(xfm_type_rows);
     summ_struct.voltage_in_C_deg = [terminalV.part2_in(:,3); zeros_bus];
     summ_struct.x = [zeros_orig_components; circuit.buses.x];
     summ_struct.y = [zeros_orig_components; circuit.buses.y];
+    
 
     
     summ_struct.losses_re = [losses_P_array'; zeros_bus];
@@ -278,5 +278,4 @@ secondary_V(xfm_type_rows) = nominalV_array(xfm_type_rows);
     
     summary_nodes_table = node_table;
     
-
 end      

@@ -1,5 +1,5 @@
-function [circuit, repeat_elements] = run_case1_ODSS(file)
-
+function [circuit, repeat_elements, regulator_data] = run_case1_ODSS(file)
+%%lines load transformer source generator in circuit file
 %% Start up the Solver
 compile_message = ['Compile "' file.ODSS_inputs];
 DSSObj = actxserver('OpenDSSEngine.DSS');
@@ -106,7 +106,7 @@ DSSObj = actxserver('OpenDSSEngine.DSS');
                 circuit.element(count).bus1 = DSSCircuit.Lines.Bus1;
                 circuit.element(count).bus2 = DSSCircuit.Lines.Bus2;
                 circuit.element(count).linecode = DSSCircuit.Lines.LineCode;
-                
+%              DSSCircuit.LineCodes.R1
                 %%TESTING
 %                 circuit.element(count).parent = DSSCircuit.Lines.Parent;
                 DSSObj.AllowForms=false;
@@ -115,7 +115,8 @@ DSSObj = actxserver('OpenDSSEngine.DSS');
                     errorString = DSSObj.Error.Description;
                     className = regexp(errorString,'.^?Class=(\w+).^?','Tokens');
                     objectName = regexp(errorString,'.^?name=(\w+)','Tokens');
-                    circuit.element(count).parent = [className{1}{1},'.',objectName{1}{1}];
+%                    circuit.element(count).parent = [className{1}{1},'.',objectName{1}{1}];
+                    
                 else
 %                     circuit.element(count).parent = get(DSSCircuit.Lines, 'Name');
                     circuit.element(count).parent = DSSCircuit.Lines.Parent;
@@ -142,6 +143,7 @@ DSSObj = actxserver('OpenDSSEngine.DSS');
                 circuit.element(count).kVAr = DSSCircuit.Loads.kvar;
                 circuit.element(count).kVA = DSSCircuit.Loads.kva;
                 circuit.element(count).kWh = DSSCircuit.Loads.kwh;
+                circuit.element(count).NumCust=DSSCircuit.Loads.NumCust;
             else 
                 circuit.element(count).kV = 0;
                 circuit.element(count).kW = 0;
@@ -177,6 +179,39 @@ DSSObj = actxserver('OpenDSSEngine.DSS');
         end
 
     end
+    
+% %% regulator transformer and controller summary
+% 
+[regulator_data]=regulator_summary_nrel(DSSCircuit);
+circuit.regulator_data = regulator_data; 
+% %% Ratio of Y_D Loads
+[Loads1, Ratio_Y_D_Load, Total_No_Customers]=loadparameters(DSSCircuit);
+ circuit.Ratio_Y_D_Load=Ratio_Y_D_Load;
+ circuit.Total_Num_Customers=Total_No_Customers;
+ circuit.Loads=Loads1;
+% %% Power flow metrics
+ [Power_Flow]=powerflowmetrics(DSSCircuit)
+circuit.Power_Flow_Time=Power_Flow.Total_Time;
+ circuit.Power_Flow_Iterations=Power_Flow.Iterations;
+ circuit.Power_Flow_Tolerance=Power_Flow.Tolerance;
+% 
+% %% Line Parameters
+  [Xfrm1, Lines1, ug_cable, oh_line, misc, ug_oh_ratio]=lineparameters(DSSCircuit);
+  circuit.ug_oh_ratio=ug_oh_ratio;
+  circuit.LineParams=Lines1;
+  circuit.XfrmParams=Xfrm1;
+  circuit.ug_oh_ratio=ug_oh_ratio;
+%     circuit.ug_oh_ratio=[];
+%   circuit.LineParams=[];
+%   circuit.XfrmParams=[];
+%   circuit.ug_oh_ratio=[];
+
+% %%Reclosers
+[fuse_summary no_of_recl recl_data]=recl_summary_nrel(DSSCircuit);
+ circuit.No_of_Reclosers =  no_of_recl;
+ circuit.recl_data = recl_data;
+ circuit.fuse=fuse_summary;
+% regulator_data=[];
 
 %% close and delete server object
 delete(DSSObj)
