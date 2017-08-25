@@ -116,15 +116,10 @@ end
 
 [users.Centroid.x,users.Centroid.y,~]=deg2utm(centerLat,centerLon);
 
-%% Find the best supply point
-% I'm considering the vertex of the building's polygon which is closest to
-% a streetmap node
-
 %% Compile other fields
 
 users.area=round(buildingArea);
 users.height=[buildings_deg.Height1]'*0.3; % convert feet to meters
-%users.height=[buildings_deg.ELEV_GL]'*0.3; % convert feet to meters
 users.levels=ceil(users.height/2.5); % assuming 2.5 m per level
 users.totalArea=users.area.*users.levels;
 users.nUsersEq=max(1,round(users.totalArea/areaPerUser,0));
@@ -132,10 +127,10 @@ users.selfCF=0.5*(1+5./(2*users.nUsersEq+3)); %Electric Power distribution Handb
 users.p=round(peakPerArea*users.totalArea.*users.selfCF,2); % peak power in kW
 users.q=users.p*tan(acos(pf));
 users.v=LV*ones(nBuildings,1); % default to LV
-users.v(users.p>50)=MV; % if the load is greater than 50 kW peak, move to MV
+users.v(users.p>100)=MV; % if the load is greater than 50 kW peak, move to MV
 users.nPhases=ones(nBuildings,1); % default to single phase
-users.nPhases(users.v==LV & users.p>20)=3; % Move LV users of more than 20 kW peak to 3 phase
-users.nPhases(users.p>200)=3; % Move all users of more than 200 kW peak to 3 phase MV
+users.nPhases(users.v==LV & users.p>50)=3; % Move LV users of more than 20 kW peak to 3 phase
+users.nPhases(users.p>1000)=3; % Move all users of more than 200 kW peak to 3 phase MV
 
 %% write user codes
 nLV=0;
@@ -183,9 +178,20 @@ writetable(tMapUsers,fullfile(dataFolder,'PointStreetMap.txt'),'Delimiter',';','
 
 save(fullfile(dataFolder,'WorkspaceLocalInfo.mat'));
 
-%%
+
 toc;
-%% summary info
+%% Summary info
+clc
+disp(['LV customers: ' num2str(sum(users.v==LV))]);
+disp(['MV customers: ' num2str(sum(users.v==MV))]);
+disp(['Single-phase customers: ' num2str(sum(users.nPhases==1))]);
+disp(['Three-phase customers: ' num2str(sum(users.nPhases==3))]);
+disp(['Sum of customer peaks: ' num2str(round(sum(users.p),0))]);
+LV_peak=round(sum(users.p(users.v==LV))*cf(1),0);
+MV_peak=round(sum(users.p(users.v==MV))*cf(2),0);
+
+disp(['Approximate peak-coincident power: ' num2str(LV_peak+MV_peak)]);
+%% histogram
 figure(1)
 hist(users.p,10000);
 xlabel('Peak load (kW)')
@@ -254,5 +260,11 @@ axis equal
 %  scatter(users.x,users.y,5,'red','filled')
 %  scatter(mapUsers.x,mapUsers.y,6,'blue','filled');
 %  hold off
+
+
+
+
+
+
 
 
