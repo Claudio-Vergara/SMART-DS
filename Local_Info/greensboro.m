@@ -3,7 +3,7 @@ clearvars
 dbstop if error
 tic;
 addpath(genpath(fullfile('C:\SMART-DS')));
-dataFolder='C:\Dropbox (MIT)\SMART_DS\data\cities\Santa_Fe_NM';
+dataFolder='C:\Dropbox (MIT)\SMART_DS\data\cities\Greensboro_NC';
 d=10; % distance between the auxiliary consumers for the street map
 pf=0.9; % inductive power factor of all the loads
 lf=[0.25 0.4]; % load factor [LV MV]
@@ -13,8 +13,8 @@ MV=12.47;
 areaPerUser=180; %m^2
 peakPerArea=0.04; % kW/m^2;
 
-%% Load roads data and convert to meters
-roads_deg=shaperead(fullfile(dataFolder,'Roads.shp'));
+%% Load roads
+roads_deg=shaperead(fullfile(dataFolder,'roads.shp'));
 roadSegs.x=[];
 roadSegs.y=[];
 nRoads=length(roads_deg);
@@ -35,6 +35,58 @@ for i=1:nRoads
     end
     nSubRoads(i)=j;
 end
+
+%% Load buildings
+buildings_deg=shaperead(fullfile(dataFolder,'buildings.shp'));
+building_centers_deg=shaperead(fullfile(dataFolder,'building_centers.shp'));
+nBuildings=length(buildings_deg);
+
+[C,ia,ic]=unique([building_centers_deg.FID_bldg_g]);
+
+%% Consolidate user attributes
+
+users.area=nan(nBuildings,1);
+users.height=nan(nBuildings,1);
+users.type=nan(nBuildings,1);
+users.poly.x=nan(nBuildings,1);
+users.poly.y=nan(nBuildings,1);
+users.nSubBuildings=nan(nBuildings,1);
+
+bPoly=struct;
+
+
+for i=1:nBuildings 
+    bPoly.x(:,i)=[];
+    bPoly.y(:,i)=[];       
+    nanLocs=find(isnan(buildings_deg(i).X));
+    users.area(i)=0;
+    for j=1:length(nanLocs)
+        if j==1
+            polyLat=buildings_deg(i).Y(1:nanLocs(j)-1);
+            polyLon=buildings_deg(i).X(1:nanLocs(j)-1); 
+           
+        else
+            polyLat=buildings_deg(i).Y(nanLocs(j-1)+1:nanLocs(j)-1);
+            polyLon=buildings_deg(i).X(nanLocs(j-1)+1:nanLocs(j)-1);
+            
+        end
+        [polyX,polyY,~]=deg2utm(polyLat,polyLon); 
+        bPoly.x(:,i)=[bPoly.x;polyX];
+        bPoly.y(:,i)=[bPoly.y;polyY];
+        users.area(i)=users.area(i)+polyarea(polyX,polyY);
+    end
+    users.nSubBuildings(i)=j;  
+      
+    if mod(i,10)
+        clc
+        disp([num2str(i) ' buildings processed']);
+    end 
+  
+    
+end
+
+
+
 
 %% Virtual users for the creation of the roadmap
 mapUsers.x=roadSegs.x(:,1);
@@ -57,68 +109,10 @@ end
 
 nMapUsers=length(mapUsers.x);
 
-%% Load buildings data, convert to meters and calculate the shape centroids
-% I'm using the centroid of the bounding box for now.
-buildings_deg=shaperead(fullfile(dataFolder,'Buildings.shp'));
-nBuildings=length(buildings_deg);
-centerLat=nan(nBuildings,1);
-centerLon=nan(nBuildings,1);
-buildingArea=nan(nBuildings,1);
-nSubBuildings=nan(nBuildings,1);
-for i=1:nBuildings
-    
-    %% Center of the bounding box in degrees
-    centerLon(i)=mean(buildings_deg(i).BoundingBox(:,1));
-    centerLat(i)=mean(buildings_deg(i).BoundingBox(:,2));
-    bVertex.x=[];
-    bVertex.y=[];
-        
-    %% Area of each building and best connection vertex
-    nanLocs=find(isnan(buildings_deg(i).X));
-    buildingArea(i)=0;
-    for j=1:length(nanLocs)
-        if j==1
-            polyLat=buildings_deg(i).Y(1:nanLocs(j)-1);
-            polyLon=buildings_deg(i).X(1:nanLocs(j)-1); 
-           
-        else
-            polyLat=buildings_deg(i).Y(nanLocs(j-1)+1:nanLocs(j)-1);
-            polyLon=buildings_deg(i).X(nanLocs(j-1)+1:nanLocs(j)-1);
-            
-        end
-        [polyX,polyY,~]=deg2utm(polyLat,polyLon); 
-        bVertex.x=[bVertex.x;polyX];
-        bVertex.y=[bVertex.y;polyY];
-        buildingArea(i)=buildingArea(i)+polyarea(polyX,polyY);
-    end
-    nSubBuildings(i)=j;  
-    M1x=repmat(bVertex.x,1,nMapUsers);
-    M1y=repmat(bVertex.y,1,nMapUsers);
-    
-    M2x=repmat(mapUsers.x',length(bVertex.x),1);
-    M2y=repmat(mapUsers.y',length(bVertex.x),1);
-    
-    dx=M1x-M2x;
-    dy=M1y-M2y;
-    d=sqrt(dx.^2+dy.^2);
-    [M,I] = min(d(:));
-    [I_row, I_col] = ind2sub(size(d),I);
-    users.x(i,1)=bVertex.x(I_row);
-    users.y(i,1)=bVertex.y(I_row);
-    
-    if mod(i,10)
-        clc
-        disp([num2str(i) ' buildings processed']);
-    end
-   
-    
-end
-
-[users.Centroid.x,users.Centroid.y,~]=deg2utm(centerLat,centerLon);
 
 %% Compile other fields
 
-users.area=round(buildingArea);
+users.area=round(users.area);
 users.height=[buildings_deg.Height1]'*0.3; % convert feet to meters
 users.levels=ceil(users.height/3.5); % assuming 3.5 m per level
 users.totalArea=users.area.*users.levels;
