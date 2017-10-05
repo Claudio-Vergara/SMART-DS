@@ -2,8 +2,12 @@ clc
 clearvars
 dbstop if error
 tic;
+
 addpath(genpath(fullfile('C:\SMART-DS')));
-dataFolder='C:\Dropbox (MIT)\SMART_DS\data\cities\Greensboro_NC';
+
+%dataFolder='C:\Dropbox (MIT)\SMART_DS\data\cities\Greensboro_NC';
+dataFolder='D:\Claudio\Dropbox (MIT)\SMART_DS\data\cities\Greensboro_NC';
+
 d=10; % distance between the auxiliary consumers for the street map
 pf=0.9; % inductive power factor of all the loads
 lf=[0.25 0.4]; % load factor [LV MV]
@@ -38,26 +42,28 @@ end
 
 %% Load buildings
 buildings_deg=shaperead(fullfile(dataFolder,'buildings.shp'));
-building_centers_deg=shaperead(fullfile(dataFolder,'building_centers.shp'));
+building_centroids=shaperead(fullfile(dataFolder,'centroid_points.shp'));
+points_intersects=shaperead(fullfile(dataFolder,'point_parcel_intersect.shp'));
 nBuildings=length(buildings_deg);
-
-[C,ia,ic]=unique([building_centers_deg.FID_bldg_g]);
 
 %% Consolidate user attributes
 
+for i=1:length(points_intersects)
+    buildings(points_intersects(i).FID_buildi).type =...
+        points_intersects(i).PARUSEDESC;  
+    
+end
+
 users.area=nan(nBuildings,1);
 users.height=nan(nBuildings,1);
-users.type=nan(nBuildings,1);
-users.poly.x=nan(nBuildings,1);
-users.poly.y=nan(nBuildings,1);
-users.nSubBuildings=nan(nBuildings,1);
-
+%users.type=nan(nBuildings,1);
 bPoly=struct;
 
+users.nSubBuildings=nan(nBuildings,1);
 
 for i=1:nBuildings 
-    bPoly.x(:,i)=[];
-    bPoly.y(:,i)=[];       
+   bPoly(i).x=[];
+   bPoly(i).y=[];       
     nanLocs=find(isnan(buildings_deg(i).X));
     users.area(i)=0;
     for j=1:length(nanLocs)
@@ -71,12 +77,12 @@ for i=1:nBuildings
             
         end
         [polyX,polyY,~]=deg2utm(polyLat,polyLon); 
-        bPoly.x(:,i)=[bPoly.x;polyX];
-        bPoly.y(:,i)=[bPoly.y;polyY];
+        bPoly(i).x=[bPoly(i).x;bPoly(i).x];
+        bPoly(i).y=[bPoly(i).y;bPoly(i).y];
         users.area(i)=users.area(i)+polyarea(polyX,polyY);
     end
-    users.nSubBuildings(i)=j;  
-      
+    users.nSubBuildings(i)=j; 
+          
     if mod(i,10)
         clc
         disp([num2str(i) ' buildings processed']);
