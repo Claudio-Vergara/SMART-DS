@@ -3,10 +3,13 @@ clearvars
 dbstop if error
 tic;
 
+%% configure
+
 addpath(genpath(fullfile('C:\SMART-DS')));
 
-%dataFolder='C:\Dropbox (MIT)\SMART_DS\data\cities\Greensboro_NC';
-dataFolder='D:\Claudio\Dropbox (MIT)\SMART_DS\data\cities\Greensboro_NC';
+dataFolder='C:\Dropbox (MIT)\SMART_DS\data\cities\Greensboro_NC';
+shapefilesFolder=fullfile(dataFolder,'shapefiles_all');
+%dataFolder='D:\Claudio\Dropbox (MIT)\SMART_DS\data\cities\Greensboro_NC';
 
 d=10; % distance between the auxiliary consumers for the street map
 pf=0.9; % inductive power factor of all the loads
@@ -18,7 +21,7 @@ areaPerUser=180; %m^2
 peakPerArea=0.04; % kW/m^2;
 
 %% Load roads
-roads_deg=shaperead(fullfile(dataFolder,'roads.shp'));
+roads_deg=shaperead(fullfile(shapefilesFolder,'roads.shp'));
 roadSegs.x=[];
 roadSegs.y=[];
 nRoads=length(roads_deg);
@@ -40,26 +43,71 @@ for i=1:nRoads
     nSubRoads(i)=j;
 end
 
-%% Load buildings
-buildings_deg=shaperead(fullfile(dataFolder,'buildings.shp'));
-building_centroids=shaperead(fullfile(dataFolder,'centroid_points.shp'));
-points_intersects=shaperead(fullfile(dataFolder,'point_parcel_intersect.shp'));
+%% Load buildings and building type data
+buildings_deg=shaperead(fullfile(shapefilesFolder,'buildings.shp'));
+building_centroids=shaperead(fullfile(shapefilesFolder,'centroid_points.shp'));
+points_intersects=shaperead(fullfile(shapefilesFolder,'point_parcel_intersect.shp'));
 nBuildings=length(buildings_deg);
 
-%% Consolidate user attributes
-
 for i=1:length(points_intersects)
-    buildings(points_intersects(i).FID_buildi).type =...
-        points_intersects(i).PARUSEDESC;  
-    
+    buildingType(points_intersects(i).FID_buildi) =...
+        string(points_intersects(i).PARUSEDESC);  
 end
 
+buildingType=buildingType';
+uniqueTypes=unique(buildingType);
 users.area=nan(nBuildings,1);
 users.height=nan(nBuildings,1);
-%users.type=nan(nBuildings,1);
 bPoly=struct;
-
 users.nSubBuildings=nan(nBuildings,1);
+
+buildingTypesData=readtable(fullfile(dataFolder,'summary_load.xlsx'));
+
+%% create building type ID from parcels
+users.parcelType=nan(nBuildings,1);
+for i=1:nBuildings
+    thisBuildingTypeName=buildingType(i);
+    switch thisBuildingTypeName
+        case 'RESIDENTIAL'
+            users.parcelType(i)=1;
+        case 'MULTI-FAMILY5>'
+            users.parcelType(i)=1;
+        case 'MULTI-FAMILY<4'
+            users.parcelType(i)=1;
+        case 'Condominium'
+            users.parcelType(i)=1;
+        case 'Apartment'
+            users.parcelType(i)=1;
+        case 'Townhouse'
+            users.parcelType(i)=1;
+        case 'Commercial'
+            users.parcelType(i)=2;
+        case 'PETROLEUM OR GAS PRODUCTION, STORAGE OR TRANSPORT'
+            users.parcelType(i)=2;
+        case 'OFFICE'
+            users.parcelType(i)=3;
+        case 'Industrial'
+            users.parcelType(i)=4;
+        case 'airport'
+            users.parcelType(i)=4;
+        case 'Hotel/motel'
+            users.parcelType(i)=5;
+        case 'GOVERNMENT OWNED'
+            users.parcelType(i)=6;
+        case 'INSTITUTIONAL'
+            users.parcelType(i)=6;
+        case 'RETAIL'
+            users.parcelType(i)=7;
+        case 'school, college, university public or private'
+            users.parcelType(i)=8;   
+        case 'Homes for the Aged-ASSISTED LIVING & SKILLED CARE'
+            users.parcelType(i)=9;
+        otherwise
+            users.parcelType(i)=0;
+    end
+end
+
+%% calculate building areas
 
 for i=1:nBuildings 
    bPoly(i).x=[];
@@ -83,16 +131,68 @@ for i=1:nBuildings
     end
     users.nSubBuildings(i)=j; 
           
-    if mod(i,10)
+    if mod(i,100)
         clc
         disp([num2str(i) ' buildings processed']);
     end 
   
+end
+clc
+        disp([num2str(nBuildings) ' buildings processed']);
+        
+%% Assign peak power
+users.p=zeros(nBuildings,1);
+users.height=[buildings_deg.Height1]'*0.3;
+users.levels=ceil(users.height/3.5); % assuming 3.5 m per level
+users.totalArea=users.area.*users.levels;
+for i=1:nBuildings
+    pType=users.parcelType(i);
+    totArea=users.totalArea(i);
+switch pType
+    case 1 % residential
+     resIndices=[6,17,18,19];
+    [M,I]= min(abs(totArea-buildingTypesData{resIndices,3}));
+    users.p(i)=totArea*buildingTypesData{resIndices(I),9};
+    case 2 % commercial
+        comIndices=[1,7,9];
+        [M,I]= min(abs(totArea-buildingTypesData{comIndices,3}));
+        users.p(i)=totArea*buildingTypesData{comIndices(I),9};
+    case 3 % office
+        ofIndices=[4,5,12];
+        [M,I]= min(abs(totArea-buildingTypesData{ofIndices,3}));
+        users.p(i)=totArea*buildingTypesData{ofIndices(I),9};
+    case 4 % industrial
+        users.p(i)=0.2*totArea; %guess for industrial specific load
+    case 5 % hotel
+        hotIndices=[3,11];
+    [M,I]= min(abs(totArea-buildingTypesData{hotIndices,3}));
+    users.p(i)=totArea*buildingTypesData{hotIndices(I),9};
+    case 6 % Institutional
+        ofIndices=[4,5,12];
+        [M,I]= min(abs(totArea-buildingTypesData{ofIndices,3}));
+        users.p(i)=totArea*buildingTypesData{ofIndices(I),9};
+    case 7 % retail
+        retIndices=[13,14,15];
+        [M,I]= min(abs(totArea-buildingTypesData{retIndices,3}));
+        users.p(i)=totArea*buildingTypesData{retIndices(I),9};
+    case 8 % schools
+    schIndices=[8,10];
+    [M,I]= min(abs(totArea-buildingTypesData{schIndices,3}));
+    users.p(i)=totArea*buildingTypesData{schIndices(I),9};
     
+    case 9 % hospitals
+    hospIndices=[8,10];
+    users.p(i)=totArea*buildingTypesData{2,9};
+    otherwise % assume residential       
+    [M,I]= min(abs(totArea-buildingTypesData{resIndices,3}));
+    users.p(i)=totArea*buildingTypesData{resIndices(I),9};
+        
+end
 end
 
+users.p(users.p>50000)=50000; % cap the power at 50 MW 
 
-
+        
 
 %% Virtual users for the creation of the roadmap
 mapUsers.x=roadSegs.x(:,1);
@@ -111,20 +211,19 @@ for i=1:nRoadSegs
    yPoints=roadSegs.y(i,1)+segSlope(i)*(xPoints-roadSegs.x(i,1));
    mapUsers.x=[mapUsers.x;xPoints'];
    mapUsers.y=[mapUsers.y;yPoints'];
+   
+   if ~mod(i,1000)
+        clc
+        disp([num2str(i) ' road segments processed']);
+    end   
 end
-
-nMapUsers=length(mapUsers.x);
-
-
+clc
+        disp([num2str(nRoadSegs) ' road segments processed']);
+        
+ 
 %% Compile other fields
 
 users.area=round(users.area);
-users.height=[buildings_deg.Height1]'*0.3; % convert feet to meters
-users.levels=ceil(users.height/3.5); % assuming 3.5 m per level
-users.totalArea=users.area.*users.levels;
-users.nUsersEq=max(1,round(users.totalArea/areaPerUser,0));
-users.selfCF=0.5*(1+5./(2*users.nUsersEq+3)); %Electric Power distribution Handbook, Tom Short, Second Edition (2014) 
-users.p=round(peakPerArea*users.totalArea.*users.selfCF,2); % peak power in kW
 users.q=users.p*tan(acos(pf));
 users.s=sqrt(users.p.^2+users.q.^2);
 users.v=LV*ones(nBuildings,1); % default to LV
