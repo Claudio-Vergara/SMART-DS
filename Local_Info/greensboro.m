@@ -1,15 +1,14 @@
 clc
 clearvars
 dbstop if error
-tic;
 
-%% configure
+%% Configure                                                                
 
 addpath(genpath(fullfile('C:\SMART-DS')));
 
-dataFolder='C:\Dropbox (MIT)\SMART_DS\data\cities\Greensboro_NC';
+%dataFolder='C:\Dropbox (MIT)\SMART_DS\data\cities\Greensboro_NC';
+dataFolder='D:\Claudio\Dropbox (MIT)\SMART_DS\data\cities\Greensboro_NC';
 shapefilesFolder=fullfile(dataFolder,'shapefiles_all');
-%dataFolder='D:\Claudio\Dropbox (MIT)\SMART_DS\data\cities\Greensboro_NC';
 
 d=10; % distance between the auxiliary consumers for the street map
 pf=0.9; % inductive power factor of all the loads
@@ -18,9 +17,8 @@ cf=[0.4 0.8]; % peak-coincidence factor [LV MV]
 LV=0.416;
 MV=12.47;
 areaPerUser=180; %m^2
-peakPerArea=0.04; % kW/m^2;
 
-%% Load roads
+%% Load roads                                                               
 roads_deg=shaperead(fullfile(shapefilesFolder,'roads.shp'));
 roadSegs.x=[];
 roadSegs.y=[];
@@ -43,9 +41,8 @@ for i=1:nRoads
     nSubRoads(i)=j;
 end
 
-%% Load buildings and building type data
+%% Load buildings and building type data                                    
 buildings_deg=shaperead(fullfile(shapefilesFolder,'buildings.shp'));
-building_centroids=shaperead(fullfile(shapefilesFolder,'centroid_points.shp'));
 points_intersects=shaperead(fullfile(shapefilesFolder,'point_parcel_intersect.shp'));
 nBuildings=length(buildings_deg);
 
@@ -63,7 +60,7 @@ users.nSubBuildings=nan(nBuildings,1);
 
 buildingTypesData=readtable(fullfile(dataFolder,'summary_load.xlsx'));
 
-%% create building type ID from parcels
+%% Create building type ID from parcels                                     
 users.parcelType=nan(nBuildings,1);
 for i=1:nBuildings
     thisBuildingTypeName=buildingType(i);
@@ -107,8 +104,34 @@ for i=1:nBuildings
     end
 end
 
-%% calculate building areas
+%% Virtual users for the creation of the roadmap                            
+mapUsers.x=roadSegs.x(:,1);
+mapUsers.y=roadSegs.y(:,1);
 
+nRoadSegs=length(roadSegs.x);
+
+for i=1:nRoadSegs
+   segLength(i)=sqrt((roadSegs.x(i,2)-roadSegs.x(i,1))^2+...
+       (roadSegs.y(i,2)-roadSegs.y(i,1))^2);
+   segSlope(i)= (roadSegs.y(i,2)-roadSegs.y(i,1))/...
+       (roadSegs.x(i,2)-roadSegs.x(i,1));
+   nSegPoints(i)= max(0,floor(segLength(i)/d)-1);
+   xPoints=roadSegs.x(i,1)+((roadSegs.x(i,2)-roadSegs.x(i,1))/(nSegPoints(i)+1)*...
+       linspace(1,nSegPoints(i),nSegPoints(i)));
+   yPoints=roadSegs.y(i,1)+segSlope(i)*(xPoints-roadSegs.x(i,1));
+   mapUsers.x=[mapUsers.x;xPoints'];
+   mapUsers.y=[mapUsers.y;yPoints'];
+   
+   if ~mod(i,1000)
+        clc
+        disp([num2str(i) ' road segments processed']);
+    end   
+end
+clc
+        disp([num2str(nRoadSegs) ' road segments processed']);       
+
+%% Calculate building areas and nearest connection points
+nMapUsers=length(mapUsers.x);
 for i=1:nBuildings 
    bPoly(i).x=[];
    bPoly(i).y=[];       
@@ -117,28 +140,39 @@ for i=1:nBuildings
     for j=1:length(nanLocs)
         if j==1
             polyLat=buildings_deg(i).Y(1:nanLocs(j)-1);
-            polyLon=buildings_deg(i).X(1:nanLocs(j)-1); 
-           
+            polyLon=buildings_deg(i).X(1:nanLocs(j)-1);          
         else
             polyLat=buildings_deg(i).Y(nanLocs(j-1)+1:nanLocs(j)-1);
-            polyLon=buildings_deg(i).X(nanLocs(j-1)+1:nanLocs(j)-1);
-            
+            polyLon=buildings_deg(i).X(nanLocs(j-1)+1:nanLocs(j)-1);            
         end
         [polyX,polyY,~]=deg2utm(polyLat,polyLon); 
-        bPoly(i).x=[bPoly(i).x;bPoly(i).x];
-        bPoly(i).y=[bPoly(i).y;bPoly(i).y];
+        bPoly(i).x=[bPoly(i).x;polyX];
+        bPoly(i).y=[bPoly(i).y;polyY];
         users.area(i)=users.area(i)+polyarea(polyX,polyY);
     end
-    users.nSubBuildings(i)=j; 
-          
-    if mod(i,100)
+    users.nSubBuildings(i)=j;  
+    
+    M1x=repmat( bPoly(i).x,1,nMapUsers);
+    M1y=repmat( bPoly(i).y,1,nMapUsers);
+    
+    M2x=repmat(mapUsers.x',length( bPoly(i).x),1);
+    M2y=repmat(mapUsers.y',length( bPoly(i).y),1);
+    
+    dx=M1x-M2x;
+    dy=M1y-M2y;
+    d=sqrt(dx.^2+dy.^2);
+    [M,I] = min(d(:));
+    [I_row, I_col] = ind2sub(size(d),I);
+    users.x(i,1)=bPoly(i).x(I_row);
+    users.y(i,1)=bPoly(i).y(I_row);
+    
+    if ~mod(i,100)
         clc
         disp([num2str(i) ' buildings processed']);
-    end 
-  
+    end   
 end
 clc
-        disp([num2str(nBuildings) ' buildings processed']);
+disp([num2str(nBuildings) ' buildings processed']);
         
 %% Assign peak power
 users.p=zeros(nBuildings,1);
@@ -192,37 +226,8 @@ end
 
 users.p(users.p>50000)=50000; % cap the power at 50 MW 
 
-        
-
-%% Virtual users for the creation of the roadmap
-mapUsers.x=roadSegs.x(:,1);
-mapUsers.y=roadSegs.y(:,1);
-
-nRoadSegs=length(roadSegs.x);
-
-for i=1:nRoadSegs
-   segLength(i)=sqrt((roadSegs.x(i,2)-roadSegs.x(i,1))^2+...
-       (roadSegs.y(i,2)-roadSegs.y(i,1))^2);
-   segSlope(i)= (roadSegs.y(i,2)-roadSegs.y(i,1))/...
-       (roadSegs.x(i,2)-roadSegs.x(i,1));
-   nSegPoints(i)= max(0,floor(segLength(i)/d)-1);
-   xPoints=roadSegs.x(i,1)+((roadSegs.x(i,2)-roadSegs.x(i,1))/(nSegPoints(i)+1)*...
-       linspace(1,nSegPoints(i),nSegPoints(i)));
-   yPoints=roadSegs.y(i,1)+segSlope(i)*(xPoints-roadSegs.x(i,1));
-   mapUsers.x=[mapUsers.x;xPoints'];
-   mapUsers.y=[mapUsers.y;yPoints'];
-   
-   if ~mod(i,1000)
-        clc
-        disp([num2str(i) ' road segments processed']);
-    end   
-end
-clc
-        disp([num2str(nRoadSegs) ' road segments processed']);
-        
- 
 %% Compile other fields
-
+users.nUsersEq=ones(nBuildings,1);
 users.area=round(users.area);
 users.q=users.p*tan(acos(pf));
 users.s=sqrt(users.p.^2+users.q.^2);
@@ -232,8 +237,10 @@ users.nPhases(users.v==LV & users.s>30/cf(1))=3; % Move LV users of more than 30
 users.v(users.s>300/cf(2))=MV; % if the load is greater than 300 kVA of coincident power, move to MV
 users.nPhases(users.s>300)=3; % Move all users of more than 300 kVA peak to 3 phase MV
 users.z=zeros(nBuildings,1);
-users.nUsersEq(users.v==MV)=1;
-%% write user codes
+users.nUsersEq(users.v==LV & users.parcelType==1)=...
+    users.area(users.v==LV & users.parcelType==1)/areaPerUser;
+
+%% Write user codes
 nLV=0;
 nMV=0;
 users.id={};
@@ -262,7 +269,7 @@ for i=1:nMapUsers
 end
 mapUsers.z=zeros(nMapUsers,1);
 
-%% write files and save the workspace
+%% Write files and save the workspace
 users.x=round(users.x,1);
 users.y=round(users.y,1);
 tUsers=table(users.x,users.y,users.z,users.id,users.v,users.p,users.q,users.nPhases);
@@ -281,6 +288,7 @@ save(fullfile(dataFolder,'WorkspaceLocalInfo.mat'));
 
 
 toc;
+
 %% Summary info
 clc
 disp(['LV customers: ' num2str(sum(users.v==LV))]);
@@ -295,12 +303,12 @@ LV_peak=round(sum(users.p(users.v==LV))*cf(1),0);
 MV_peak=round(sum(users.p(users.v==MV))*cf(2),0);
 
 disp(['Approximate peak-coincident power: ' num2str(LV_peak+MV_peak)]);
+
 %% histogram
 figure(1)
 hist(users.p,10000);
 xlabel('Peak load (kW)')
 ylabel('Number of buildings')
-
 %% create heatmap
 
 mapHeight=400; %cells
