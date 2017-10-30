@@ -135,7 +135,8 @@ line_loss_S_name = 'lineloss_S';
 
 %% Cycle through each transformer
 for iX = 1:num_x
-   
+ tic;  
+ 
    if iX == num_x && add_sourcenode %for the last iteration, the function will run through the entire feeder
         disp('On sourcenode iteration');
         % find first this_row
@@ -243,7 +244,7 @@ for iX = 1:num_x
        ibranch = ibranch + 1;
     end
 
-%% Create x_load summary table: This is a summary of the load and branch level information held in x_table for each transformer.
+% Create x_load summary table: This is a summary of the load and branch level information held in x_table for each transformer.
     %  if xformer iX has branches and loads, then add these to the load
     %  table
 
@@ -299,7 +300,7 @@ for iX = 1:num_x
     xfm_row = (strcmp(lower(summary_lines_table.name), thisX{1,1}));
     xfm_capacity = summary_lines_table{xfm_row, 'cont_rating_amps_or_kVA'};
     x_load(iX).xfm_capacity = xfm_capacity;
-
+toc
 end
 
 end 

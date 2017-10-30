@@ -20,8 +20,7 @@ DSSObj = actxserver('OpenDSSEngine.DSS');
     if DSSSolution.Converged
         disp('The Circuit Solved Successfully')
     end
-
-    
+  
     
 %% Retrieiving useful values: 
 %% Extract circuit level data from the DSSCircuit object
@@ -75,11 +74,8 @@ DSSObj = actxserver('OpenDSSEngine.DSS');
         thisCleanType = clean_types{iType};
         start_obj = DSSCircuit.(thisType);
         start_obj.First;
-
-
         n = DSSCircuit.(thisType).Count;
         this_name = [];
-
         
         for i = 1:n
             
