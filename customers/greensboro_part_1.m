@@ -41,7 +41,7 @@ for i=1:nRoads
     nSubRoads(i)=j;
 end
 
-%% Load buildings and building type data                                    
+%% Load buildings                                   
 buildings_deg=shaperead(fullfile(shapefilesFolder,'buildings.shp'));
 points_intersects=shaperead(fullfile(shapefilesFolder,'point_parcel_intersect.shp'));
 nBuildings=length(buildings_deg);
@@ -55,7 +55,6 @@ buildingType=buildingType';
 uniqueTypes=unique(buildingType);
 bPoly=struct;
 users.nSubBuildings=nan(nBuildings,1);
-
 
 %% Create building type ID from parcels                                     
 users.parcelType=nan(nBuildings,1);
