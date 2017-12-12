@@ -1,4 +1,4 @@
-function [Feeder]=Feeder_Wise_Data(file,summary_lines_final,summary_nodes_final,a_matrix,bus_names,a_matrix_non,asym_matrix,nodes_array)
+function [Feeder]=Feeder_Wise_Data1(file,summary_lines_final,summary_nodes_final,a_matrix,bus_names,a_matrix_non,asym_matrix,nodes_array)
 %Added by NREL
 %  HV > 115kV, 69kV < MV < 2.4kV, LV < 600V
 %% No of Substations
@@ -15,7 +15,7 @@ No_of_Regulators = length(Idx2);
 summary_regulators = summary_lines_final(Idx2,:);
 
 Idx3=setdiff(Idx1, Idx2);
-%Idx3=Idx1;
+
 summary_transformer=summary_lines_final(Idx3,:);
 
 Idx=regexp(summary_nodes_final.component,'node');
@@ -139,9 +139,9 @@ if length(unique(Xfrm_To)) < length(Xfrm_To)
     %%
     else
 for ix = 1 : No_of_Substations
+    ix
     Idx1 = strcmp(summary_lines_final.from,strtok(Xfrm_To(ix),'.'));
     Idx2 = find(Idx1 == 1);
-    ix
     if isempty(Idx2)
         len1=length(summary_lines_final.from);
         for jk=1:len1
@@ -186,7 +186,7 @@ for ix = 1 : No_of_Substations
     end
    
     %%
-     C = cell(length(fuse_node),1);
+     C = cell(length(Idx4),1);
      C(:) = SubStn_Node(ix);
      
       C0 = cell(length(unique(feed_node.')),1);
@@ -417,10 +417,3 @@ Feeder.Feeder_Agg_Metrics=Feeder_Agg_Metrics;
 
 
 end        
-   
-
-
-
-
-
-

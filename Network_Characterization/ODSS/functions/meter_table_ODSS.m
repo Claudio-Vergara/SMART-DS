@@ -15,21 +15,13 @@ if isempty(row_subxfm)
     sourcenode_row = find(cellfun('isempty', nodes_array.parent_node));
     source_bus = nodes_array{sourcenode_row, 'name'};
     downstream_node = nodes_array{sourcenode_row, 'downstream_nodes'};
-    
-    DS_nodes=downstream_node{1,1};
-    n_DS_nodes=length(DS_nodes);
-    P_in=0;
-    Q_in=0;
-    for i=1:n_DS_nodes
-    
-    downstream_node_row = find(strcmp(nodes_array.name, DS_nodes{i}));
-    line_connector{i} = nodes_array{downstream_node_row, 'line_connector'};
+    downstream_node_row = find(strcmp(nodes_array.name, downstream_node{1,1}));
+    line_connector = nodes_array{downstream_node_row, 'line_connector'};
 
     % calculate p into the regulatr connected to the source bus
-    terminal_row = find(strcmp(lower(summary_lines_table.name), line_connector{i}));
-    P_in = P_in+ sum(summary_lines_table{terminal_row, {'power_in_A_P', 'power_in_B_P', 'power_in_C_P'}});
-    Q_in = Q_in+ sum(summary_lines_table{terminal_row, {'power_in_A_Q', 'power_in_B_Q', 'power_in_C_Q'}});
-    end
+    terminal_row = find(strcmp(lower(summary_lines_table.name), line_connector));
+    P_in = sum(summary_lines_table{terminal_row, {'power_in_A_P', 'power_in_B_P', 'power_in_C_P'}});
+    Q_in = sum(summary_lines_table{terminal_row, {'power_in_A_Q', 'power_in_B_Q', 'power_in_C_Q'}});
 
     meter_summary(1).name = [source_bus{1,1} '_source_bus'];
     meter_summary(1).transformer = line_connector;

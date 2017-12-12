@@ -28,15 +28,16 @@ function [feeder_metrics]=struct_metric(a_matrixn,a_matrix_nonn)
    feeder_metrics.char_path_len = mean(mean(d_matrix));
     
     % clustering coeffient
-    [clust_coeff] = clustering_coefficients(sparse_A);
-    feeder_metrics.clust_coeff = clust_coeff;
+    %[clust_coeff] = clustering_coefficients(sparse_A);
+    %feeder_metrics.clust_coeff = clust_coeff;
     % degree assortativity
-    deg_assort = assortativity(A, 0);
-    feeder_metrics.deg_assort = deg_assort;
+    %deg_assort = assortativity(A, 0);
+    %deg_assort = [];
+    %feeder_metrics.deg_assort = deg_assort;
     % node betweeness
-    betweenness = betweenness_centrality(sparse_A);
-    feeder_metrics.betweenness = betweenness;
+    %betweenness = betweenness_centrality(sparse_A);
+    %feeder_metrics.betweenness = betweenness;
     
-    feeder_metrics.deg_array = sum(A,1); % degree distribution
+    %feeder_metrics.deg_array = sum(A,1); % degree distribution
     feeder_metrics.ave_deg = mean(sum(A,1)); % average degree
 end
