@@ -20,7 +20,8 @@ DSSObj = actxserver('OpenDSSEngine.DSS');
     if DSSSolution.Converged
         disp('The Circuit Solved Successfully')
     end
-  
+
+%    Y=DSSCircuit.SystemY
     
 %% Retrieiving useful values: 
 %% Extract circuit level data from the DSSCircuit object
@@ -31,7 +32,11 @@ DSSObj = actxserver('OpenDSSEngine.DSS');
     circuit.buses.names = DSSCircuit.allBusNames;
     circuit.buses.AllNodeNames = DSSCircuit.AllNodeNames;
     circuit.buses.bus_Vmag = DSSCircuit.allBusVmag'/1000;
-    
+% Distance from substation
+circuit.Distance = DSSCircuit.AllBusDistances;
+circuit.Nodes_Dis = DSSCircuit.allBusNames;
+circuit.Distance=DSSCircuit.AllNodeDistances;
+circuit.Nodes_Dis = DSSCircuit.AllNodeNames;
     bus_names = [circuit.buses.names];
     
     for i = 1:length(circuit.buses.names)
@@ -74,8 +79,11 @@ DSSObj = actxserver('OpenDSSEngine.DSS');
         thisCleanType = clean_types{iType};
         start_obj = DSSCircuit.(thisType);
         start_obj.First;
+
+
         n = DSSCircuit.(thisType).Count;
         this_name = [];
+
         
         for i = 1:n
             
@@ -196,15 +204,15 @@ circuit.Power_Flow_Time=Power_Flow.Total_Time;
  circuit.Power_Flow_Tolerance=Power_Flow.Tolerance;
 % 
 % %% Line Parameters
-  [Xfrm1, Lines1, ug_cable, oh_line, misc, ug_oh_ratio]=lineparameters(DSSCircuit);
-  circuit.ug_oh_ratio=ug_oh_ratio;
-  circuit.LineParams=Lines1;
-  circuit.XfrmParams=Xfrm1;
-  circuit.ug_oh_ratio=ug_oh_ratio;
-%     circuit.ug_oh_ratio=[];
-%   circuit.LineParams=[];
-%   circuit.XfrmParams=[];
-%   circuit.ug_oh_ratio=[];
+ [Xfrm1, Lines1, ug_cable, oh_line, misc, ug_oh_ratio]=lineparameters(DSSCircuit);
+%  circuit.ug_oh_ratio=ug_oh_ratio;
+ circuit.LineParams=Lines1;
+%  circuit.XfrmParams=Xfrm1;
+%  circuit.ug_oh_ratio=ug_oh_ratio;
+     circuit.ug_oh_ratio=[];
+ %  circuit.LineParams=[];
+   circuit.XfrmParams=[];
+   circuit.ug_oh_ratio=[];
 
 % %%Reclosers
 [fuse_summary no_of_recl recl_data]=recl_summary_nrel(DSSCircuit);

@@ -56,7 +56,9 @@ if isempty(Idxaa)
     No_of_Substations=length(unique(strtok(summary_propbable_substations.from,'.')));
     Feeder.summary_propbable_substations=summary_propbable_substations;
     Feeder.No_of_Substations=No_of_Substations;
-    Xfrm_To = unique(strtok(summary_propbable_substations.to,'.'));
+    [Xfrm_To,ia,ib] = unique(strtok(summary_propbable_substations.to,'.'));
+    Xfrm_To = Xfrm_To(ib);
+    clear ib
 else
 summary_transformer1=summary_transformer(Idxaa,:);
 l_xfrm=length(summary_transformer1.name);
@@ -169,6 +171,7 @@ for ix = 1 : No_of_Substations
     fuse_node1 = summary_lines_final.to(Idx4);
     clear feed_node
     iii = 1;
+    clear fuse_node
     for ij=1:length(fuse_node1)
         idf=strcmp(strtok(summary_lines_final.from,'.'),strtok(fuse_node1(ij),'.'));
         idf1=find(idf==1);
@@ -182,7 +185,7 @@ for ix = 1 : No_of_Substations
     for ij=1:length(fuse_node)
         idf=strcmp(strtok(summary_lines_final.from,'.'),strtok(fuse_node(ij),'.'));
         idf1=find(idf==1);
-        feed_node(ij)=summary_lines_final.to(idf1);
+        feed_node(ij)=summary_lines_final.from(idf1); %changed from 'to' to 'from'
     end
    
     %%
@@ -208,18 +211,19 @@ for ix = 1 : No_of_Substations
       C0 = cell(length(unique(feed_node.')),1);
      C0(:) = SubStn_Node(ix);
     end
-    Feed_Node1 = [Feed_Node1;unique(feed_node.')];
+    [fff,ia,ib]=unique(feed_node.')
+    Feed_Node1 = [Feed_Node1;fff(ib)];
     Feeder_Counts.Substation(ix,1) = summary_propbable_substations.name(ix);
     Feeder_Counts.Count(ix,1) = length(unique(feed_node));
-    Feeder_Counts.totalconn(ix,1) = length(Idx4);
+    Feeder_Counts.totalconn(ix,1) = (length(fuse_node));
     [Idx_Fe] = [Idx_Fe;Idx4];
     
     [From_Node] = [From_Node;C];
     [From_Node1] = [From_Node1;C0];
-    Feeder_Node=summary_lines_final.to(Idx4);
-    To_Node = [To_Node;summary_lines_final.to(Idx4)];
+    Feeder_Node=feed_node;
+    To_Node = [To_Node;feed_node.'];
     
-    C1 = cell(length(Idx4),1);
+    C1 = cell(length(fuse_node),1);
     C1(:) = summary_propbable_substations.name(ix);
     SubStn_Name = [SubStn_Name;C1];
     
@@ -257,9 +261,9 @@ else
 end
     
 for iy=1:Total_No_Connections
-Idx1 = strcmp(bus_names,Feeder_Summary.From_Node(iy));
+Idx1 = strcmp(bus_names,Feeder_Final_Summary.From_Node(iy));
 Idx2 = find(Idx1==1);
-Idx3 = strcmp(bus_names,strtok(Feeder_Summary.To_Node(iy),'.'));
+Idx3 = strcmp(bus_names,strtok(Feeder_Final_Summary.To_Node(iy),'.'));
 Idx4 = find(Idx3==1);
 a_matrix1(Idx2,Idx4) = 0;
 a_matrix1(Idx4,Idx2) = 0;
@@ -287,7 +291,8 @@ Ix1=find(Ix == 1);
 summary_nodes_final.bus(Ix1)=summary_nodes_final.name(Ix1);
 nod_bus = strtok(summary_nodes_final.bus,'.');
 %%
-Feed_Node2=unique([To_Node1;bus_names(1)]); %add source bus name
+[Feed_Node2,ia,ib]=unique([To_Node1;bus_names(1)]); %add source bus name
+Feed_Node2 = Feed_Node2(ib);
 iz1=0;
 iz2=0;
 for iz = 1:No_of_SubGraphs
@@ -337,7 +342,8 @@ Idz_nod=[];
     Idz6=find(Idz5==1);
     Idz_nod =[Idz_nod;Idz6];   
     end
-    Idz_line = unique([Idz_from;Idz_to]);
+    [Idz_line,ia,ib] = unique([Idz_from;Idz_to]);
+    Idz_line = Idz_line(ib);
     if iq == No_of_SubGraphs
         1;
     else
@@ -380,8 +386,9 @@ for ik = 1:No_of_SubGraphs
     filename = sprintf('%s_%d','FeederNo',iz3);
     a_matrixn = adj_matrix.(filename);
     a_matrix_nonn = adj_matrix_non.(filename);
-    [feeder_metrics]=struct_metric(a_matrixn,a_matrix_nonn);
-    Feeder_Agg_Metrics.(filename) = feeder_metrics;
+%    [feeder_metrics]=struct_metric(a_matrixn,a_matrix_nonn);
+%    Feeder_Agg_Metrics.(filename) = feeder_metrics;
+   Feeder_Agg_Metrics.(filename) = [];
     end
     clear feeder_metrics;
 end
@@ -413,9 +420,78 @@ Feeder.Feeder_Agg_Metrics=Feeder_Agg_Metrics;
 % end
 % Feeder.Feeder_X_R_Ratio=Feeder_X_R_Ratio;
 % Feeder.X_R_Ratio = X_R_Tab;
-
-
-
+%unique
+for ii = 1:Feeder.Total_No_Feeders
+filename = sprintf('%s_%d','FeederNo',ii);
+Feeder1.summary_feeder_lines.(filename) = table;
+aaa = Feeder.summary_feeder_lines.(filename);
+[bbb ib ia]=unique(aaa.name);
+Feeder1.summary_feeder_lines.(filename).component=Feeder.summary_feeder_lines.(filename).component(ib);
+Feeder1.summary_feeder_lines.(filename).name=Feeder.summary_feeder_lines.(filename).name(ib);
+Feeder1.summary_feeder_lines.(filename).type=Feeder.summary_feeder_lines.(filename).type(ib);
+Feeder1.summary_feeder_lines.(filename).bus=Feeder.summary_feeder_lines.(filename).bus(ib);
+Feeder1.summary_feeder_lines.(filename).to=Feeder.summary_feeder_lines.(filename).to(ib);
+Feeder1.summary_feeder_lines.(filename).from=Feeder.summary_feeder_lines.(filename).from(ib);
+Feeder1.summary_feeder_lines.(filename).linecode=Feeder.summary_feeder_lines.(filename).linecode(ib);
+Feeder1.summary_feeder_lines.(filename).parent=Feeder.summary_feeder_lines.(filename).parent(ib);
+Feeder1.summary_feeder_lines.(filename).phases=Feeder.summary_feeder_lines.(filename).phases(ib);
+Feeder1.summary_feeder_lines.(filename).phasecount=Feeder.summary_feeder_lines.(filename).phasecount(ib);
+Feeder1.summary_feeder_lines.(filename).length=Feeder.summary_feeder_lines.(filename).length(ib);
+Feeder1.summary_feeder_lines.(filename).nominalV=Feeder.summary_feeder_lines.(filename).nominalV(ib);
+Feeder1.summary_feeder_lines.(filename).nominalV_2nd_xfm=Feeder.summary_feeder_lines.(filename).nominalV_2nd_xfm(ib);
+Feeder1.summary_feeder_lines.(filename).cont_rating_amps_or_kVA=Feeder.summary_feeder_lines.(filename).cont_rating_amps_or_kVA(ib);
+Feeder1.summary_feeder_lines.(filename).resistence_R=Feeder.summary_feeder_lines.(filename).resistence_R(ib);
+Feeder1.summary_feeder_lines.(filename).reactance_X=Feeder.summary_feeder_lines.(filename).reactance_X(ib);
+Feeder1.summary_feeder_lines.(filename).susceptance_B=Feeder.summary_feeder_lines.(filename).susceptance_B(ib);
+Feeder1.summary_feeder_lines.(filename).power_in_A_P=Feeder.summary_feeder_lines.(filename).power_in_A_P(ib);
+Feeder1.summary_feeder_lines.(filename).power_in_A_Q=Feeder.summary_feeder_lines.(filename).power_in_A_Q(ib);
+Feeder1.summary_feeder_lines.(filename).power_in_B_P=Feeder.summary_feeder_lines.(filename).power_in_B_P(ib);
+Feeder1.summary_feeder_lines.(filename).power_in_B_Q=Feeder.summary_feeder_lines.(filename).power_in_B_Q(ib);
+Feeder1.summary_feeder_lines.(filename).power_in_C_P=Feeder.summary_feeder_lines.(filename).power_in_C_P(ib);
+Feeder1.summary_feeder_lines.(filename).power_in_C_Q=Feeder.summary_feeder_lines.(filename).power_in_C_Q(ib);
+Feeder1.summary_feeder_lines.(filename).current_in_A_real=Feeder.summary_feeder_lines.(filename).current_in_A_real(ib);
+Feeder1.summary_feeder_lines.(filename).current_in_A_im=Feeder.summary_feeder_lines.(filename).current_in_A_im(ib);
+Feeder1.summary_feeder_lines.(filename).current_in_B_real=Feeder.summary_feeder_lines.(filename).current_in_B_real(ib);
+Feeder1.summary_feeder_lines.(filename).current_in_B_im=Feeder.summary_feeder_lines.(filename).current_in_B_im(ib);
+Feeder1.summary_feeder_lines.(filename).current_in_C_real=Feeder.summary_feeder_lines.(filename).current_in_C_real(ib);
+Feeder1.summary_feeder_lines.(filename).current_in_C_im=Feeder.summary_feeder_lines.(filename).current_in_C_im(ib);
+Feeder1.summary_feeder_lines.(filename).voltage_in_A_mag=Feeder.summary_feeder_lines.(filename).voltage_in_A_mag(ib);
+Feeder1.summary_feeder_lines.(filename).voltage_in_A_deg=Feeder.summary_feeder_lines.(filename).voltage_in_A_deg(ib);
+Feeder1.summary_feeder_lines.(filename).voltage_in_B_mag=Feeder.summary_feeder_lines.(filename).voltage_in_B_mag(ib);
+Feeder1.summary_feeder_lines.(filename).voltage_in_B_deg=Feeder.summary_feeder_lines.(filename).voltage_in_B_deg(ib);
+Feeder1.summary_feeder_lines.(filename).voltage_in_C_mag=Feeder.summary_feeder_lines.(filename).voltage_in_C_mag(ib);
+Feeder1.summary_feeder_lines.(filename).voltage_in_C_deg=Feeder.summary_feeder_lines.(filename).voltage_in_C_deg(ib);
+Feeder1.summary_feeder_lines.(filename).x=Feeder.summary_feeder_lines.(filename).x(ib);
+Feeder1.summary_feeder_lines.(filename).y=Feeder.summary_feeder_lines.(filename).y(ib);
+Feeder1.summary_feeder_lines.(filename).measured_real_power=Feeder.summary_feeder_lines.(filename).measured_real_power(ib);
+Feeder1.summary_feeder_lines.(filename).measured_reactive_power=Feeder.summary_feeder_lines.(filename).measured_reactive_power(ib);
+Feeder1.summary_feeder_lines.(filename).losses_re=Feeder.summary_feeder_lines.(filename).losses_re(ib);
+Feeder1.summary_feeder_lines.(filename).losses_im=Feeder.summary_feeder_lines.(filename).losses_im(ib);
+Feeder1.summary_feeder_lines.(filename).S_phase_A=Feeder.summary_feeder_lines.(filename).S_phase_A(ib);
+Feeder1.summary_feeder_lines.(filename).S_phase_B=Feeder.summary_feeder_lines.(filename).S_phase_B(ib);
+Feeder1.summary_feeder_lines.(filename).S_phase_C=Feeder.summary_feeder_lines.(filename).S_phase_C(ib);
+Feeder1.summary_feeder_lines.(filename).S_total=Feeder.summary_feeder_lines.(filename).S_total(ib);
+Feeder1.summary_feeder_lines.(filename).URatio=Feeder.summary_feeder_lines.(filename).URatio(ib);
+Feeder1.summary_feeder_lines.(filename).Vmag_phase_A=Feeder.summary_feeder_lines.(filename).Vmag_phase_A(ib);
+Feeder1.summary_feeder_lines.(filename).Vmag_phase_B=Feeder.summary_feeder_lines.(filename).Vmag_phase_B(ib);
+Feeder1.summary_feeder_lines.(filename).Vmag_phase_C=Feeder.summary_feeder_lines.(filename).Vmag_phase_C(ib);
+Feeder1.summary_feeder_lines.(filename).imbalance=Feeder.summary_feeder_lines.(filename).imbalance(ib);
+Feeder1.summary_feeder_lines.(filename).length_numPhase1=Feeder.summary_feeder_lines.(filename).length_numPhase1(ib);
+Feeder1.summary_feeder_lines.(filename).length_numPhase2=Feeder.summary_feeder_lines.(filename).length_numPhase2(ib);
+Feeder1.summary_feeder_lines.(filename).length_numPhase3=Feeder.summary_feeder_lines.(filename).length_numPhase3(ib);
+Feeder1.summary_feeder_lines.(filename).magI_Phase1=Feeder.summary_feeder_lines.(filename).magI_Phase1(ib);
+Feeder1.summary_feeder_lines.(filename).magI_Phase2=Feeder.summary_feeder_lines.(filename).magI_Phase2(ib);
+Feeder1.summary_feeder_lines.(filename).magI_Phase3=Feeder.summary_feeder_lines.(filename).magI_Phase3(ib);
+Feeder1.summary_feeder_lines.(filename).maxDev_I=Feeder.summary_feeder_lines.(filename).maxDev_I(ib);
+Feeder1.summary_feeder_lines.(filename).maxDev_S=Feeder.summary_feeder_lines.(filename).maxDev_S(ib);
+Feeder1.summary_feeder_lines.(filename).maxDev_V=Feeder.summary_feeder_lines.(filename).maxDev_V(ib);
+Feeder1.summary_feeder_lines.(filename).meanI=Feeder.summary_feeder_lines.(filename).meanI(ib);
+Feeder1.summary_feeder_lines.(filename).meanS=Feeder.summary_feeder_lines.(filename).meanS(ib);
+Feeder1.summary_feeder_lines.(filename).meanV=Feeder.summary_feeder_lines.(filename).meanV(ib);
+Feeder1.summary_feeder_lines.(filename).arbitrary_x=Feeder.summary_feeder_lines.(filename).arbitrary_x(ib);
+Feeder1.summary_feeder_lines.(filename).arbitrary_y=Feeder.summary_feeder_lines.(filename).arbitrary_y(ib);
+end
+Feeder.summary_feeder_lines = Feeder1.summary_feeder_lines;
 end        
    
 
