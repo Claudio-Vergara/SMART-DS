@@ -461,10 +461,6 @@ end
 else
     %number of Customers
 %No of Customers
-%place Loads_IntermediateFormat.csv file, which can be obtained from
-%intermediate formates provided by RNM, if there are multiple
-%Loads_IntermediateFormat.csv files like for rural, indutsrial, urban merge
-%them into one file.
 Devfile_cust = fullfile(file.ODSS.loc,'Loads_IntermediateFormat.csv')
 A_cust = importdata(Devfile_cust);
 A_cust = lower(A_cust);
@@ -579,9 +575,7 @@ for j = 1:Feeder.Total_No_Feeders
 %     disdiff = (circuit.Distance(idx1_d));
     filename1 = sprintf('%s_%d','FeederNo',j);
     [aa bb]=max(Feeder.summary_feeder_lines.(filename1).cont_rating_amps_or_kVA);
-    idxaa=strcmp(nodetrim,strtok(Feeder.summary_feeder_lines.(filename1).from(bb),'.'));
-    idxab=find(idxaa==1);
-    disdiff = circuit.Distance(idxab(1))
+    idx
     for jj = 1 : length(Feeder.summary_feeder_lines.(filename1).from)
         idx=strcmp(nodetrim,strtok(Feeder.summary_feeder_lines.(filename1).from(jj),'.'));
         idx1=find(idx == 1);

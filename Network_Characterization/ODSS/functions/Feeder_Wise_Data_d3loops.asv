@@ -293,9 +293,7 @@ end
 %    a_matrix1(Idx3,Idx4) = 0;
 %    a_matrix1(Idx4,Idx3) = 0;
 % end
- file.switch_urban_suburban = fullfile(file.ODSS.loc,'urban-suburban\OpenDSS\SwitchingDevices.dss');
- file.switch_rural = fullfile(file.ODSS.loc,'rural\OpenDSS\SwitchingDevices.dss');
- file.switch_industrial = fullfile(file.ODSS.loc,'industrial\OpenDSS\SwitchingDevices.dss');
+
 M1 = importdata(file.switch_urban_suburban);
 M2 = importdata(file.switch_rural);
 M3 = importdata(file.switch_industrial);
@@ -420,54 +418,15 @@ for iz=1:No_of_SubGraphs
     
     res = max(summary_lines_final.swres(Idz_line,:));
     
-    if iz == C(1) || (res > 1000 && length(ia_nod)<3)
+    if iz == C(1) || (res > 1000 && length()<3)
         1;
     else
         iz2=iz2+1;
         filename = sprintf('%s_%d','FeederNo',iz2);
         summary_feeder_lines.(filename) = summary_lines_final(Idz_line,:);
         summary_feeder_nodes.(filename) = summary_nodes_final(ia_nod,:);
-        adj_matrix.(filename)=a_matrix(Id_bus{iz},Id_bus{iz});
-        adj_matrix_non.(filename)=a_matrix_non(Id_bus{iz},Id_bus{iz});
-        asy_matrix.(filename)=asym_matrix(Id_bus{iz},Id_bus{iz});
-        Bus_Sub_Names1.(filename) = bus_names(Id_bus{iz});
-        Bus_Node_Array1 = nodes_array(Id_bus{iz});
     end
-end
-
-
-% for iz = 1:No_of_SubGraphs
-% Id_bus{iz} = find(C == iz);
-% a_sub_matrix{iz} = a_matrix(Id_bus{iz},Id_bus{iz});
-% Bus_Sub_Names{iz} = bus_names(Id_bus{iz});
-% iz
-%      for iq = 1:length(Feed_Node2)
-%          ida = strcmp(Bus_Sub_Names{iz},Feed_Node2(iq));
-%          ida1 = find(ida==1);
-%          if isempty(ida1)
-%              continue
-%          else
-%              break
-%          end
-%      end
-% 
-% AA(iz) = iq;
-%     if iq == No_of_SubGraphs
-%         1;
-%     else
-%         iz1=iz1+1;
-%         filename = sprintf('%s_%d','FeederNo',iz1);
-%         adj_matrix.(filename)=a_matrix(Id_bus{iz},Id_bus{iz});
-%         adj_matrix_non.(filename)=a_matrix_non(Id_bus{iz},Id_bus{iz});
-%         asy_matrix.(filename)=asym_matrix(Id_bus{iz},Id_bus{iz});
-%         Bus_Sub_Names1.(filename) = bus_names(Id_bus{iz});
-%         Bus_Node_Array1 = nodes_array(Id_bus{iz});
-%     end
-% 
-% Idz_from=[];
-% Idz_to=[];
-% Idz_nod=[];
-% 
+    
 %     for ig = 1:length(bus_names(Id_bus{iz}))
 %     %summary_lines_final
 %     Idz1=strcmp(lin_from,bus_names(Id_bus{iz}(ig)));
@@ -485,7 +444,8 @@ end
 %     end
 %     [Idz_line,ia,ib] = unique([Idz_from;Idz_to]);
 %     Idz_line = Idz_line(ib);
-%     if iq == No_of_SubGraphs
+%     length(Idz_line)
+%     if iz == C(1) || length(Idz_line)<2
 %         1;
 %     else
 %         iz2=iz2+1;
@@ -493,27 +453,83 @@ end
 %         summary_feeder_lines.(filename) = summary_lines_final(Idz_line,:);
 %         summary_feeder_nodes.(filename) = summary_nodes_final(Idz_nod,:);
 %     end
-% %     G=graph(a_sub_matrix{iz});
-% %     figure(iz)
-% %     plot(G)
-% end
+end
 
-Feeder_Summary1=Feeder_Final_Summary;
 
-% 
-% iy=0;
-% for ih = 1:No_of_SubGraphs
-%     ih
-%     idy = AA(ih);
-%     if idy == No_of_SubGraphs
-%         SS_Idx = ih  %substation
-%     else
-%         iy=iy+1;
-%         Feeder_Summary1(iy,:)=Feeder_Final_Summary(AA(ih),:);
-%     end
-% end
+for iz = 1:No_of_SubGraphs
+Id_bus{iz} = find(C == iz);
+a_sub_matrix{iz} = a_matrix(Id_bus{iz},Id_bus{iz});
+Bus_Sub_Names{iz} = bus_names(Id_bus{iz});
+iz
+     for iq = 1:length(Feed_Node2)
+         ida = strcmp(Bus_Sub_Names{iz},Feed_Node2(iq));
+         ida1 = find(ida==1);
+         if isempty(ida1)
+             continue
+         else
+             break
+         end
+     end
 
+AA(iz) = iq;
+    if iq == No_of_SubGraphs
+        1;
+    else
+        iz1=iz1+1;
+        filename = sprintf('%s_%d','FeederNo',iz1);
+        adj_matrix.(filename)=a_matrix(Id_bus{iz},Id_bus{iz});
+        adj_matrix_non.(filename)=a_matrix_non(Id_bus{iz},Id_bus{iz});
+        asy_matrix.(filename)=asym_matrix(Id_bus{iz},Id_bus{iz});
+        Bus_Sub_Names1.(filename) = bus_names(Id_bus{iz});
+        Bus_Node_Array1 = nodes_array(Id_bus{iz});
+    end
+
+Idz_from=[];
+Idz_to=[];
+Idz_nod=[];
+
+    for ig = 1:length(bus_names(Id_bus{iz}))
+    %summary_lines_final
+    Idz1=strcmp(lin_from,bus_names(Id_bus{iz}(ig)));
+    Idz2=find(Idz1==1);
+    Idz_from =[Idz_from;Idz2];
+    Idz3=strcmp(lin_to,bus_names(Id_bus{iz}(ig)));
+    Idz4=find(Idz3==1);
+    Idz_to =[Idz_to;Idz4];
+    Line_Idx_from{iz}=Idz_from;
+    Line_Idx_to{iz}=Idz_to;
+    %summary_nodes_final
+    Idz5=strcmp(nod_bus,bus_names(Id_bus{iz}(ig)));
+    Idz6=find(Idz5==1);
+    Idz_nod =[Idz_nod;Idz6];   
+    end
+    [Idz_line,ia,ib] = unique([Idz_from;Idz_to]);
+    Idz_line = Idz_line(ib);
+    if iq == No_of_SubGraphs
+        1;
+    else
+        iz2=iz2+1;
+        filename = sprintf('%s_%d','FeederNo',iz2);
+        summary_feeder_lines.(filename) = summary_lines_final(Idz_line,:);
+        summary_feeder_nodes.(filename) = summary_nodes_final(Idz_nod,:);
+    end
+%     G=graph(a_sub_matrix{iz});
+%     figure(iz)
+%     plot(G)
+end
+iy=0;
+for ih = 1:No_of_SubGraphs
+    ih
+    idy = AA(ih);
+    if idy == No_of_SubGraphs
+        SS_Idx = ih  %substation
+    else
+        iy=iy+1;
+        Feeder_Summary1(iy,:)=Feeder_Final_Summary(AA(ih),:);
+    end
+end
 Feeder.Feeder_Summary = Feeder_Summary1;
+
 Feeder.summary_feeder_lines=summary_feeder_lines;
 Feeder.summary_feeder_nodes=summary_feeder_nodes;
 Feeder.adj_matrix = adj_matrix;
@@ -521,16 +537,21 @@ Feeder.adj_matrix_non = adj_matrix_non;
 Feeder.asy_matrix = asy_matrix;
 Feeder.Bus_Sub_Names = Bus_Sub_Names1;
 Feeder.Bus_Node_Array1 = Bus_Node_Array1;
-Feeder.Total_No_Feeders = iz2;
-
+Feeder.Total_No_Feeders = No_of_SubGraphs-1;
+idab = find(AA == No_of_SubGraphs);
 iz3=0;
-for ik = 1:Feeder.Total_No_Feeders
+for ik = 1:No_of_SubGraphs
+    if ik==idab
+        1;
+    else
     iz3=iz3+1;
     filename = sprintf('%s_%d','FeederNo',iz3);
     a_matrixn = adj_matrix.(filename);
     a_matrix_nonn = adj_matrix_non.(filename);
-    [feeder_metrics]=struct_metric(a_matrixn,a_matrix_nonn);
-    Feeder_Agg_Metrics.(filename) = feeder_metrics;
+%    [feeder_metrics]=struct_metric(a_matrixn,a_matrix_nonn);
+%    Feeder_Agg_Metrics.(filename) = feeder_metrics;
+   Feeder_Agg_Metrics.(filename) = [];
+    end
     clear feeder_metrics;
 end
 Feeder.Feeder_Agg_Metrics=Feeder_Agg_Metrics;

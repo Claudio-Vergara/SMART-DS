@@ -10,7 +10,7 @@ load(fullfile(saveWorkspace, 'nodes_array'));
 load(fullfile(saveWorkspace, 'file'));
 
 %segregates and calculates feeder wise data
-[Feeder]=Feeder_Wise_Data_d3(file,summary_lines_final,summary_nodes_final,a_matrix,bus_names,a_matrix_non,asym_matrix,nodes_array);
+[Feeder]=Feeder_Wise_Data_d3loops(file,summary_lines_final,summary_nodes_final,a_matrix,bus_names,a_matrix_non,asym_matrix,nodes_array);
 
 variables = {'Feeder'};
 for iV = 1:length(variables)

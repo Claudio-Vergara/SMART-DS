@@ -37,19 +37,38 @@ for j = 1:Feeder.Total_No_Feeders
     Sub_Id.Distance(j,1) = (circuit.Distance(idx1_d));
 end
 
-for i = 1:Feeder.Total_No_Feeders
-    filename = sprintf('%s_%d','FeederNo',i);
-    idxdis = find(Sub_Id.Feed_No == i);
-    disdiff = Sub_Id.Distance(idxdis(1));
-    for j = 1 : length(Feeder.summary_feeder_lines.(filename).from)
+
+Sub_Id = table;
+for j = 1:Feeder.Total_No_Feeders
+    filename1 = sprintf('%s_%d','FeederNo',j);
+    [aa bb]=max(Feeder.summary_feeder_lines.(filename1).cont_rating_amps_or_kVA);
+    idxaa=strcmp(nodetrim,strtok(Feeder.summary_feeder_lines.(filename1).from(bb),'.'));
+    idxab=find(idxaa==1);
+    disdiff = circuit.Distance(idxab(1))
+      for jj = 1 : length(Feeder.summary_feeder_lines.(filename).from)
         %substation to node
         
-        idx=strcmp(nodetrim,strtok(Feeder.summary_feeder_lines.(filename).from(j),'.'));
+        idx=strcmp(nodetrim,strtok(Feeder.summary_feeder_lines.(filename).from(jj),'.'));
         idx1=find(idx == 1);
         idx1=idx1(1);
-        Feeder.summary_feeder_lines.(filename).distance(j) = ((circuit.Distance(idx1))-disdiff)*0.621371; %miles
+        Feeder.summary_feeder_lines.(filename).distance(jj) = ((circuit.Distance(idx1))-disdiff)*0.621371; %miles
     end
 end
+%
+% 
+% for i = 1:Feeder.Total_No_Feeders
+%     filename = sprintf('%s_%d','FeederNo',i);
+%     idxdis = find(Sub_Id.Feed_No == i);
+%     disdiff = Sub_Id.Distance(idxdis(1));
+%     for j = 1 : length(Feeder.summary_feeder_lines.(filename).from)
+%         %substation to node
+%         
+%         idx=strcmp(nodetrim,strtok(Feeder.summary_feeder_lines.(filename).from(j),'.'));
+%         idx1=find(idx == 1);
+%         idx1=idx1(1);
+%         Feeder.summary_feeder_lines.(filename).distance(j) = ((circuit.Distance(idx1))-disdiff)*0.621371; %miles
+%     end
+% end
 
 
 for i=1:Feeder.Total_No_Feeders;

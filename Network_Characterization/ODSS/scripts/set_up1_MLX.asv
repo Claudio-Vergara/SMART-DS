@@ -1,0 +1,85 @@
+
+clc;
+clear;
+close all;
+
+%% GLD Summary table lines
+% file.format = 'ODSS';
+% file.caseName = 'ieee34';
+% file.caseName = 'ieee37';
+% file.caseName = '123edd';
+% file.caseName = 'ieee8500';
+% file.caseName = 'ckt5n';
+% file.caseName = 'EPRIJ';
+% file.caseName = 'ckt24';
+% file.caseName = '123Bus';
+% file.caseName = '8500-Node';
+% file.caseName = '4Bus-DY-Bal';
+% file.caseName = 'epri1';
+% file.caseName = '37Bus2';
+% file.caseName = '13Bus1';
+% file.caseName = 'Demo21';
+% file.caseName = 'Demo2_plus';
+% file.caseName = 'Demo2_v25';
+% file.caseName = 'Demo_1v8';
+% file.caseName = 'Demo2plus_v30';
+%file.caseName = 'Loveland\West2'
+%file.caseName = 'dataset3\cold\rural\OpenDSS'
+% file.caseName = 'Demo2Plus_v2.6'
+file.caseName = 'Dataset3.2\m'
+
+%mainFolder = 'C:\Users\V\Dropbox (MIT)\feeder_metrics';
+ codeFolder = 'C:\Users\athakall\Desktop\FEEDER_CODES\SMART-DS-master\Network_Characterization';
+ casesFolder='C:\Users\athakall\Desktop\FEEDER_CODES\ODSS_feeders';
+
+% functions: either minor ones written for the ODSS cases, or pulled from other sources
+
+addpath(genpath(fullfile(codeFolder,'ODSS')));
+addpath(genpath(fullfile(codeFolder,'shared')));
+addpath('C:\Users\athakall\Desktop\FEEDER_CODES\SMART-DS-master\Network_Characterization\ODSS\functions');
+addpath('C:\Users\athakall\Desktop\FEEDER_CODES\SMART-DS-master\Network_Characterization\ODSS\functions\matlab_bgl');
+file.ODSS = struct;
+% file.ODSS.loc = fullfile(mainFolder,'native_files','ODSS_feeders','13Bus');
+% file.ODSS.loc = fullfile(mainFolder,'native_files','ODSS_feeders','37Bus');
+% file.ODSS.loc = fullfile(mainFolder,'native_files','ODSS_feeders','123Bus');
+% file.ODSS.loc = fullfile(mainFolder,'native_files','ODSS_feeders','8500-Node');
+% file.ODSS.loc = fullfile(mainFolder,'native_files','ODSS_feeders','ckt5');
+% file.ODSS.loc = fullfile(mainFolder,'native_files','ODSS_feeders','ckt7');
+% file.ODSS.loc = fullfile(mainFolder,'native_files','ODSS_feeders','ckt24');
+% file.ODSS.loc = fullfile(mainFolder,'native_files','ODSS_feeders','J1_EPRI','OpenDSS');
+% file.ODSS.loc = fullfile(mainFolder,'native_files','ODSS_feeders','EPRI_Test_Feeder_J_EPRI','OpenDSS');
+ file.ODSS.loc = fullfile(casesFolder,file.caseName);
+
+%Input (Run script in OpenDSS)
+% file.ODSS_inputs = fullfile(file.ODSS.loc,'IEEE13Nodeckt.dss');
+% file.ODSS_inputs = fullfile(file.ODSS.loc,'ieee37.dss');
+% file.ODSS_inputs = fullfile(file.ODSS.loc,'Run_IEEE123Bus_script1.dss');
+% file.ODSS_inputs = fullfile(file.ODSS.loc,'Run_8500Node_Unbal.dss');
+% file.ODSS_inputs = fullfile(file.ODSS.loc,'Run_ckt5_v2.dss');
+% file.ODSS_inputs = fullfile(file.ODSS.loc,'RunDSS_ckt7.dss');
+% file.ODSS_inputs = fullfile(file.ODSS.loc,'Run_Ckt24.dss');
+% file.ODSS_inputs = fullfile(file.ODSS.loc,'4Bus-DY-Bal.dss');
+ file.ODSS_inputs = fullfile(file.ODSS.loc,'RunDSS.dss');
+% file.ODSS_inputs = fullfile(file.ODSS.loc,'Master.dss');
+% file.ODSS_inputs = fullfile(file.ODSS.loc,'Run_IEEE123Bus.dss');
+%X/R Ratio File
+%file.X_R = fullfile(file.ODSS.loc,'Airport1_EXP_SEQZ.CSV');
+
+%switching devices path
+ file.switch_urban_suburban = fullfile(file.ODSS.loc,'urban-suburban\OpenDSS\SwitchingDevices.dss');
+ file.switch_rural = fullfile(file.ODSS.loc,'rural\OpenDSS\SwitchingDevices.dss');
+ file.switch_industrial = fullfile(file.ODSS.loc,'industrial\OpenDSS\SwitchingDevices.dss');
+
+%% GRIDLAB-D(1) or ODSS(2) 
+file.data_type = 2;
+
+%% (1) = use the XY coords provided by the case for plots (held in circuit data structure)
+file.ODSS.useXYcoord = 1;
+
+saveWorkspace = fullfile(casesFolder,'case_outputs','mat_workspaces', file.caseName);
+mkdir(saveWorkspace);
+
+%Location where CSVs should be exported
+folderName = fullfile(casesFolder,'case_outputs','csv_exports','ODSS', file.caseName);
+mkdir(folderName);
+file.CSVexport = fullfile(casesFolder,'case_outputs','csv_exports','ODSS', file.caseName);

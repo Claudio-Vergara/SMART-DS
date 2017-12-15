@@ -31,6 +31,15 @@ SysLevel.Total_No_Feeders = Feeder.Total_No_Feeders;
 SysLevel.Capacity_MVA = max(summary_lines_final.cont_rating_amps_or_kVA)*2/1000;
 SysLevel.Distribution_Tranformer_Total_Capacity_MVA = sum(FeederData.Distribution_Tranformer_Total_Capacity_MVA);
 SysLevel.No_of_Distribution_Transformer =  sum(FeederData.No_of_Distribution_Transformer);
+
+aa =  strcmp(summary_nodes_final.type,'node');
+bb = find(aa==1);
+cc = summary_nodes_final.nominalV(bb);
+dd_mv = length(find(cc > 1 & cc < 36));
+dd_lv = length(find(cc < 1));
+SysLevel.No_of_MV_Nodes = dd_mv;
+SysLevel.No_of_LV_Nodes = dd_lv;
+
 SysLevel.No_of_Customers = sum(FeederData.No_of_Customers);
 
 
@@ -40,7 +49,7 @@ tf_1 = length(find(tf_1b == 1));
 tf_3a = find(summary_lines_final.phasecount == 3);
 tf_3b = strcmp(summary_lines_final.type(tf_3a),'transformer');
 tf_3 = length(find(tf_3b == 1));
-SysLevel.Ratio_1phto3ph_Xfrm = tf_1/tf_3;
+%SysLevel.Ratio_1phto3ph_Xfrm = tf_1/tf_3;
 
 ilv1 = strcmp(summary_lines_final.type,'line');
 ilv = find(ilv1 == 1);
@@ -53,11 +62,11 @@ Syslevel.mv_length_miles = sum(bb(ilvlen1))*dist_mult;
 idx_fut = find(summary_nodes_final.phasecount == 3);
 dis_fur = summary_nodes_final.bus(idx_fut);
 [cc dd ee]=intersect(strtok(circuit.Nodes_Dis,'.'),dis_fur);
-if isempty(dd)
-   SysLevel.furtherest_node_miles = 0;
-else
-   SysLevel.furtherest_node_miles = max(circuit.Distance(dd))*0.621371;
-end
+% if isempty(dd)
+%    SysLevel.furtherest_node_miles = 0;
+% else
+%    SysLevel.furtherest_node_miles = max(circuit.Distance(dd))*0.621371;
+% end
 
 %new update mv/lv line lengths
 % total 3-ph MV-length
@@ -76,8 +85,8 @@ if isempty(idx_oh)
 else
     len_3ph_oh = sum(summary_lines_final.length(idx_oh));
 end
-SysLevel.Length_mv3ph_miles = len_3ph*dist_mult; %in miles
-SysLevel.Length_OH_mv3ph_miles = len_3ph_oh*dist_mult; %in miles
+% SysLevel.Length_mv3ph_miles = len_3ph*dist_mult; %in miles
+% SysLevel.Length_OH_mv3ph_miles = len_3ph_oh*dist_mult; %in miles
 
 % total 2-ph MV-length
 idxmv = find(summary_lines_final.nominalV < 36 & summary_lines_final.nominalV > 1 & ...
@@ -95,8 +104,8 @@ if isempty(idx_oh)
 else
     len_3ph_oh = sum(summary_lines_final.length(idx_oh));
 end
-SysLevel.Length_mv2ph_miles = len_3ph*dist_mult; %in miles
-SysLevel.Length_OH_mv2ph_miles = len_3ph_oh*dist_mult; %in miles
+% SysLevel.Length_mv2ph_miles = len_3ph*dist_mult; %in miles
+% SysLevel.Length_OH_mv2ph_miles = len_3ph_oh*dist_mult; %in miles
 
 % total 1-ph MV-length
 idxmv = find(summary_lines_final.nominalV < 36 & summary_lines_final.nominalV > 1 & ...
@@ -114,8 +123,8 @@ if isempty(idx_oh)
 else
     len_3ph_oh = sum(summary_lines_final.length(idx_oh));
 end
-SysLevel.Length_mv1ph_miles = len_3ph*dist_mult; %in miles
-SysLevel.Length_OH_mv1ph_miles = len_3ph_oh*dist_mult; %in miles
+% SysLevel.Length_mv1ph_miles = len_3ph*dist_mult; %in miles
+% SysLevel.Length_OH_mv1ph_miles = len_3ph_oh*dist_mult; %in miles
 
 % total 3-ph LV-length
 
@@ -134,8 +143,8 @@ if isempty(idx_oh)
 else
     len_3ph_oh = sum(summary_lines_final.length(idx_oh));
 end
-SysLevel.Length_lv3ph_miles = len_3ph*dist_mult; %in miles
-SysLevel.Length_OH_lv3ph_miles = len_3ph_oh*dist_mult; %in miles
+% SysLevel.Length_lv3ph_miles = len_3ph*dist_mult; %in miles
+% SysLevel.Length_OH_lv3ph_miles = len_3ph_oh*dist_mult; %in miles
 
 % total 2-ph LV-length
 
@@ -154,8 +163,8 @@ if isempty(idx_oh)
 else
     len_3ph_oh = sum(summary_lines_final.length(idx_oh));
 end
-Length_lv2ph_miles = len_3ph*dist_mult; %in miles
-Length_OH_lv2ph_miles = len_3ph_oh*dist_mult; %in miles
+% Length_lv2ph_miles = len_3ph*dist_mult; %in miles
+% Length_OH_lv2ph_miles = len_3ph_oh*dist_mult; %in miles
 
 
 % total 1-ph LV-length
@@ -174,8 +183,8 @@ if isempty(idx_oh)
 else
     len_3ph_oh = sum(summary_lines_final.length(idx_oh));
 end
-SysLevel.Length_lv1ph_miles = len_3ph*dist_mult + Length_lv2ph_miles; %in miles % LV 2-ph lines are treated as 1-ph line due to cneter tap
-SysLevel.Length_OH_lv1ph_miles = len_3ph_oh*dist_mult + Length_OH_lv2ph_miles; %in miles
+%SysLevel.Length_lv1ph_miles = len_3ph*dist_mult + Length_lv2ph_miles; %in miles % LV 2-ph lines are treated as 1-ph line due to cneter tap
+%SysLevel.Length_OH_lv1ph_miles = len_3ph_oh*dist_mult + Length_OH_lv2ph_miles; %in miles
 %new update mv and lv line length
 
 aa = strcmp(summary_lines_final.from,src_node);
@@ -193,9 +202,9 @@ power_Q_C = sum(summary_lines_final.power_in_C_Q(bb));
 Total_1ph = power_P_A + power_P_B + power_P_C;
 Total_1ph_q = power_Q_A + power_Q_B + power_Q_C;
 
-SysLevel.ph_A_load_kw_percentage = (power_P_A/Total_1ph)*100;
-SysLevel.ph_B_load_kw_percentage = (power_P_B/Total_1ph)*100;
-SysLevel.ph_C_load_kw_percentage = (power_P_C/Total_1ph)*100;
+% SysLevel.ph_A_load_kw_percentage = (power_P_A/Total_1ph)*100;
+% SysLevel.ph_B_load_kw_percentage = (power_P_B/Total_1ph)*100;
+% SysLevel.ph_C_load_kw_percentage = (power_P_C/Total_1ph)*100;
 
 SysLevel.Total_Demand_kW = Total_1ph;
 SysLevel.Total_Reactive_Power_kVAr = Total_1ph_q;
@@ -271,13 +280,7 @@ idx1=find(~cellfun(@isempty,idx));
 No_of_inter=length(idx1);
 SysLevel.No_of_Interruptors=No_of_inter;
 
-aa =  strcmp(summary_nodes_final.type,'node');
-bb = find(aa==1);
-cc = summary_nodes_final.nominalV(bb);
-dd_mv = length(find(cc > 1 & cc < 36));
-dd_lv = length(find(cc < 1));
-SysLevel.No_of_MV_Nodes = dd_mv;
-SysLevel.No_of_LV_Nodes = dd_lv;
+
 variables = {'SysLevel'};
 for iV = 1:length(variables)
     saveMat = fullfile(saveWorkspace, [variables{iV} '.mat']);
